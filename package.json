@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/unit/*.test.js",
+    "build:ics": "node scripts/build-ics.mjs",
     "test:e2e": "playwright test",
     "serve": "node scripts/serve.mjs"
   }
