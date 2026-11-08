@@ -1,0 +1,510 @@
+@font-face {
+  font-family: "Pinyon Script";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/pinyon-script-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: "Pinyon Script";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/pinyon-script-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/cormorant-garamond-500-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/cormorant-garamond-500-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: "Josefin Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/josefin-sans-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: "Josefin Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/josefin-sans-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: "Josefin Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/josefin-sans-600-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: "Josefin Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("assets/fonts/josefin-sans-600-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+:root {
+  --olive: #3f4a32;
+  --olive-deep: #313a26;
+  --cream: #efe7cf;
+  --brass-light: #f0dca2;
+  --brass: #a7843f;
+  --brass-dark: #8a6a2c;
+  --ink: #3a2c10;
+  --paper: #f6efdc;
+
+  /* Timings that Task 5 tunes together. */
+  --press-ms: 120ms;
+  --reveal-ms: 500ms;
+
+  /* Strip geometry: width follows the viewport, then the strip's 440:1600 ratio gives its height. */
+  --strip-w: clamp(4.5rem, calc((100svh - 23rem) / 3.636), min(30vw, 7.5rem));
+
+  /* Fine horizontal brush streaks. */
+  --brush-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.9' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.1 0 0 0 0 0.02 0 0 0 0.55 -0.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* Brushed brass: streak texture, fine vertical grain, then a soft sheen over a metallic gradient. */
+  --brass-stack:
+    var(--brush-noise),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, rgba(0, 0, 0, 0.045) 1px 2px),
+    linear-gradient(135deg, #e6cf8f 0%, var(--brass) 32%, var(--brass-light) 54%, var(--brass-dark) 100%);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  color-scheme: dark;
+  background: var(--olive);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  background-color: var(--olive);
+  background-image: radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 230, 0.07), transparent 70%);
+  color: var(--cream);
+  font-family: "Josefin Sans", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Layout ---------- */
+
+.booth {
+  width: 100%;
+  max-width: 440px;
+  min-height: 100vh;
+  min-height: 100svh;
+  margin-inline: auto;
+  padding:
+    max(1.5rem, env(safe-area-inset-top))
+    max(1.25rem, env(safe-area-inset-right))
+    max(1.25rem, env(safe-area-inset-bottom))
+    max(1.25rem, env(safe-area-inset-left));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr;
+  justify-items: center;
+  align-content: start;
+  row-gap: 1.25rem;
+}
+
+/* The plate and the names share one cell so they can crossfade; the button and details share another. */
+.plate, .names { grid-area: 1 / 1; }
+.slot { grid-area: 2 / 1; }
+.print-btn, .details { grid-area: 3 / 1; }
+.note { grid-area: 4 / 1; align-self: end; }
+
+/* ---------- Visibility by state ---------- */
+
+.names, .details, .note, .strip {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.plate, .print-btn, .etched {
+  opacity: 1;
+  visibility: visible;
+}
+
+.booth[data-state="printed"] .names,
+.booth[data-state="printed"] .details,
+.booth[data-state="printed"] .note,
+.booth[data-state="printed"] .strip,
+html.no-js .names,
+html.no-js .details,
+html.no-js .note,
+html.no-js .strip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.booth[data-state="printed"] .plate,
+.booth[data-state="printed"] .print-btn,
+.booth[data-state="printed"] .etched,
+html.no-js .plate,
+html.no-js .print-btn,
+html.no-js .etched {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* ---------- Brass plate ---------- */
+
+.plate {
+  position: relative;
+  align-self: start;
+  width: min(100%, 15rem);
+  min-height: 6rem;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--ink);
+  background: var(--brass-stack);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 244, 205, 0.55),
+    inset 0 2px 3px rgba(255, 255, 255, 0.25),
+    inset 0 -3px 5px rgba(80, 55, 10, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.12),
+    0 6px 14px rgba(15, 20, 8, 0.5);
+  cursor: pointer;
+}
+
+/* Four slotted screws: two pseudo-elements, each carrying a left and a right head. */
+.plate::before,
+.plate::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  height: 10px;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(58, 44, 16, 0.85), rgba(58, 44, 16, 0.85)) left 2px center / 6px 1.5px no-repeat,
+    linear-gradient(rgba(58, 44, 16, 0.85), rgba(58, 44, 16, 0.85)) right 2px center / 6px 1.5px no-repeat,
+    radial-gradient(circle at 35% 30%, #d9bf7a 0%, #8a6a2c 55%, #5f4818 100%) left / 10px 10px no-repeat,
+    radial-gradient(circle at 35% 30%, #d9bf7a 0%, #8a6a2c 55%, #5f4818 100%) right / 10px 10px no-repeat;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.28));
+}
+.plate::before { top: 7px; }
+.plate::after { bottom: 7px; }
+
+.plate-text {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.45);
+}
+
+.plate-arrow {
+  margin-top: 0.15rem;
+  font-family: "Josefin Sans", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 1.35rem;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.45);
+}
+
+.plate-count {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 3rem;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.5);
+  pointer-events: none;
+}
+.plate-count:empty { display: none; }
+
+.booth[data-state="countdown"] .plate-text,
+.booth[data-state="countdown"] .plate-arrow {
+  visibility: hidden;
+}
+
+/* ---------- Names (printed state, shares the plate's cell) ---------- */
+
+.names {
+  margin: 0;
+  max-width: 100%;
+  align-self: center;
+  text-align: center;
+  font-family: "Pinyon Script", cursive;
+  font-weight: 400;
+  font-size: clamp(2rem, 11vw, 3.25rem);
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--cream);
+  text-shadow: 0 2px 8px rgba(20, 26, 12, 0.45);
+}
+
+/* At 340px and below the names wrap onto two lines ("Emilija &" / "Dominykas"). */
+@media (max-width: 340px) {
+  .names { padding-inline: 0.75rem; }
+}
+
+/* ---------- Recessed slot ---------- */
+
+.slot {
+  position: relative;
+  width: calc(var(--strip-w) + 2 * 0.875rem + 2 * 0.5rem);
+  /* The border carries the brass frame; the padding box is the well and clips the strip. */
+  border: 0.5rem solid transparent;
+  border-radius: 8px;
+  padding: 0.625rem 0.875rem;
+  overflow: hidden;
+  background: var(--brass-stack);
+  background-origin: border-box;
+  background-clip: border-box;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(255, 244, 205, 0.35),
+    0 6px 14px rgba(15, 20, 8, 0.5);
+}
+.slot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 40%),
+    linear-gradient(90deg, #1d2114, #2b3120 30%, #2b3120 70%, #1d2114);
+  box-shadow:
+    inset 0 10px 14px rgba(0, 0, 0, 0.65),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+    inset 0 -2px 0 rgba(255, 255, 255, 0.06);
+}
+
+.etched {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 0.5rem;
+  text-align: center;
+  font-family: "Pinyon Script", cursive;
+  font-size: 2rem;
+  line-height: 1.05;
+  text-wrap: balance;
+  color: rgba(255, 238, 190, 0.6);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 238, 190, 0.18);
+  pointer-events: none;
+}
+
+.strip {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: var(--strip-w);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
+}
+.strip:enabled { cursor: zoom-in; }
+
+.strip img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 440 / 1600;
+  background: var(--paper);
+}
+
+/* ---------- Print button ---------- */
+
+.print-btn {
+  position: relative;
+  align-self: start;
+  margin-top: 0.75rem;
+  width: 4rem;
+  height: 4rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brass-stack);
+  box-shadow:
+    inset 0 -4px 6px rgba(70, 48, 8, 0.35),
+    inset 0 2px 3px rgba(255, 250, 225, 0.55),
+    inset 0 0 0 4px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 244, 205, 0.3),
+    0 5px 10px rgba(10, 14, 5, 0.55);
+  cursor: pointer;
+  transition: transform var(--press-ms) ease, box-shadow var(--press-ms) ease;
+}
+.print-btn::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(58, 44, 16, 0.5);
+  box-shadow: 0 1px 0 rgba(255, 244, 205, 0.45), inset 0 1px 0 rgba(58, 44, 16, 0.2);
+  pointer-events: none;
+}
+.print-btn:active { transform: scale(0.94); }
+.print-btn:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 6px;
+}
+
+.halo {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid #e6cf8f;
+  pointer-events: none;
+  animation: pulse 1.8s ease-out infinite;
+}
+@keyframes pulse {
+  0% { transform: scale(0.9); opacity: 0.9; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+.booth[data-state]:not([data-state="idle"]) .halo { animation: none; opacity: 0; }
+
+/* ---------- Details ---------- */
+
+.details {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.date {
+  margin: 0.25rem 0 1rem;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 500;
+  font-size: 2.25rem;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+}
+
+.cal-primary,
+.cal-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  font-family: "Josefin Sans", system-ui, sans-serif;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.cal-primary {
+  padding: 0.75rem 1.5rem;
+  border-radius: 3px;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+  background: var(--brass-stack);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 244, 205, 0.45),
+    inset 0 -2px 3px rgba(80, 55, 10, 0.3),
+    0 3px 7px rgba(10, 14, 5, 0.45);
+}
+
+.cal-secondary {
+  margin-top: 0.5rem;
+  padding: 0 0.75rem;
+  color: var(--cream);
+  font-weight: 400;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  opacity: 0.88;
+}
+
+.cal-primary:focus-visible,
+.cal-secondary:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
+}
+
+.note {
+  margin: 0;
+  padding-top: 1.25rem;
+  text-align: center;
+  font-weight: 400;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+/* `.note` fades with the rest via the shared visibility rules; its resting opacity is applied to the text colour. */
+.note { opacity: 0; }
+.booth[data-state="printed"] .note,
+html.no-js .note { opacity: 0.75; }
+
+/* ---------- Flash ---------- */
+
+.flash {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .halo {
+    animation: none;
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}

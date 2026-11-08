@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="lt" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Save the Date · Emilija &amp; Dominykas</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" as="font" type="font/woff2" href="assets/fonts/pinyon-script-400-latin.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="assets/fonts/josefin-sans-600-latin.woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script>document.documentElement.className = 'js';</script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main class="booth" data-state="idle">
+    <div class="plate" data-trigger>
+      <span class="plate-text">Paspausk mygtuką!</span><span class="plate-arrow" aria-hidden="true">↓</span>
+      <span class="plate-count" aria-hidden="true"></span>
+    </div>
+    <h1 class="names">Emilija&nbsp;&amp; Dominykas</h1>
+    <div class="slot" data-trigger>
+      <span class="etched" aria-hidden="true">Save the Date</span>
+      <button class="strip" type="button" disabled aria-label="Emilijos ir Dominyko nuotraukų juostelė">
+        <img src="assets/strip.webp" alt="Emilijos ir Dominyko nuotraukų juostelė" width="440" height="1600">
+      </button>
+    </div>
+    <button class="print-btn" type="button" aria-label="Spausdinti nuotraukas"><span class="halo" aria-hidden="true"></span></button>
+    <section class="details">
+      <p class="date"><time datetime="2027-08-20">2027.08.20</time></p>
+      <a class="cal-primary" href="/save-the-date.ics">Pridėti į kalendorių</a>
+      <a class="cal-secondary" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=Emilijos%20ir%20Dominyko%20vestuv%C4%97s&amp;dates=20270820/20270821&amp;details=Kvietim%C4%85%20atsi%C5%B3sime%20v%C4%97liau.%0Ahttps%3A/%2Femilija-dominykas.netlify.app%2F" target="_blank" rel="noopener">Google kalendorius</a>
+    </section>
+    <p class="note">Kvietimą atsiųsime vėliau</p>
+    <div class="flash" aria-hidden="true"></div>
+    <p class="sr-only" id="announce" aria-live="polite"></p>
+  </main>
+</body>
+</html>
