@@ -129,6 +129,7 @@ body {
 /* ---------- Layout ---------- */
 
 .booth {
+  touch-action: manipulation; /* no iOS double-tap zoom on the plate or the slot */
   width: 100%;
   max-width: 440px;
   min-height: 100vh;
@@ -327,6 +328,7 @@ html.no-js .etched {
 
 /* ---------- Names (printed state, shares the plate's cell) ---------- */
 
+.names:focus { outline: none; } /* programmatic focus target only */
 .names {
   margin: 0;
   max-width: 100%;
@@ -561,7 +563,8 @@ html.no-js .etched {
 .booth[data-state="flash"] .flash { visibility: visible; }
 
 /* ---------- Close-up dialog ---------- */
-/* No display rule here: a closed <dialog> stays display:none, so it takes no space (also without JS). */
+/* A closed dialog must take no space, also where the UA stylesheet has no <dialog> support. */
+.zoom:not([open]) { display: none; }
 .zoom {
   border: 0;
   padding: 0;

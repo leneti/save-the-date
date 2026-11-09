@@ -16,6 +16,11 @@ test('idle shows plate, slot and print button only', async ({ page }) => {
   await expect(page.locator('.flash')).toBeHidden();
 });
 
+test('the booth opts out of double-tap zoom', async ({ page }) => {
+  await page.goto('/');
+  expect(await page.locator('.booth').evaluate((el) => getComputedStyle(el).touchAction)).toBe('manipulation');
+});
+
 test('no horizontal overflow in idle', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.print-btn')).toBeVisible();

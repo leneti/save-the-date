@@ -45,6 +45,14 @@ for (const trigger of ['.plate', '.slot']) {
   });
 }
 
+test('focus lands on the names when printing finishes after a keyboard press', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('.print-btn').focus();
+  await page.keyboard.press('Enter');
+  await printed(page);
+  await expect(page.locator('.names')).toBeFocused();
+});
+
 test('double press does not restart', async ({ page }) => {
   await recordStates(page);
   await page.goto('/');

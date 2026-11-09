@@ -102,3 +102,28 @@ test('strip is not tappable while printing', async ({ page }) => {
   await page.locator('.strip').click({ force: true });
   await expect(page.locator('.zoom')).not.toHaveAttribute('open');
 });
+
+test('a failed strip image does not open an empty close-up', async ({ page }) => {
+  await page.route('**/assets/strip.webp', (route) => route.abort());
+  await printAndOpen(page);
+  await expect.poll(() => page.evaluate(() => {
+    const img = document.querySelector('.strip img');
+    return img.complete && img.naturalWidth === 0;
+  })).toBe(true);
+  await page.locator('.strip').click({ force: true });
+  await page.waitForTimeout(300);
+  await expect(page.locator('.zoom')).not.toHaveAttribute('open');
+  expect(await page.evaluate(() => !!history.state?.zoom)).toBe(false);
+});
+
+test('without <dialog> support the strip is inert and nothing breaks', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.addInitScript(() => { delete HTMLDialogElement.prototype.showModal; });
+  await printAndOpen(page);
+  await page.locator('.strip').click();
+  await page.waitForTimeout(300);
+  await expect(page.locator('.zoom')).toBeHidden();
+  expect(await page.evaluate(() => !!history.state?.zoom)).toBe(false);
+  expect(errors).toEqual([]);
+});

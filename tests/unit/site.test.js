@@ -79,3 +79,9 @@ test('every strip <img> width/height attributes match strip.webp', async () => {
     assert.equal(tag.match(/\bheight="(\d+)"/)?.[1], String(height), tag);
   }
 });
+
+test('preloaded fonts exist, and josefin 600 latin-ext (the plate "ą") is preloaded', () => {
+  const hrefs = [...html.matchAll(/<link rel="preload" as="font"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(hrefs.includes('assets/fonts/josefin-sans-600-latin-ext.woff2'), hrefs.join(', '));
+  for (const h of hrefs) assert.ok(statSync(join(siteDir, h)).size > 0, h);
+});

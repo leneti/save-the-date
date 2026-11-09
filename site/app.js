@@ -175,9 +175,17 @@ async function runSequence(reduced) {
   callHook('onLand');
 
   await until(landAt + bounce);
-  strip.disabled = false;
-  $('#announce').textContent = ANNOUNCEMENT;
+  finish();
+}
+
+// The printed tail, shared by the normal path and the catch-all fallback.
+function finish() {
   booth.dataset.state = 'printed';
+  $('.strip').disabled = false;
+  $('#announce').textContent = ANNOUNCEMENT;
+  // The print button is hidden now, so keyboard focus would fall to <body>. Hand it to the heading instead.
+  const active = document.activeElement;
+  if (!active || active === document.body || active === $('.print-btn')) $('.names').focus({ preventScroll: true });
 }
 
 function start() {
@@ -188,7 +196,7 @@ function start() {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   runSequence(reduced).catch(() => {
     // Whatever went wrong, never strand the visitor mid-sequence.
-    booth.dataset.state = 'printed';
+    finish();
   });
 }
 
@@ -203,6 +211,9 @@ let closing = false;
 
 function openZoom() {
   if (zoom.open || booth.dataset.state !== 'printed') return;
+  if (typeof zoom.showModal !== 'function') return; // no <dialog> support: the strip is simply not zoomable
+  const img = $('.strip img');
+  if (img.complete && img.naturalWidth === 0) return; // the photo failed to load: nothing to show
   closing = false;
   zoom.showModal();
   history.pushState({ zoom: true }, '');
