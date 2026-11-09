@@ -8,7 +8,8 @@ const DEFAULT_OUT = join(root, 'site/assets/strip.webp');
 const MAX_BYTES = 200_000;
 
 export async function prepareStrip(input, { rotate = 0, crop, tone = 'bw', out = DEFAULT_OUT } = {}) {
-  let img = sharp(input);
+  // Apply the EXIF orientation first (and flush it), so --rotate and --crop refer to the photo as the user sees it.
+  let img = sharp(await sharp(input).rotate().png().toBuffer());
   if (rotate) img = img.rotate(rotate, { background: '#ffffff' });
   if (crop) {
     const [left, top, width, height] = crop.split(',').map(Number);

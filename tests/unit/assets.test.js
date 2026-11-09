@@ -50,6 +50,31 @@ test('prepareStrip crops, rotates and tones', async () => {
   }
 });
 
+test('prepareStrip honours EXIF orientation, so crop coordinates match the photo as seen', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'strip-'));
+  try {
+    // Stored 2000x1000 with orientation 6 (rotate 90deg CW): displayed as 1000x2000. A red block fills the
+    // displayed top 500px. Stored, it is the left-hand 500 columns; displayed, rows 0-499.
+    const input = await sharp({ create: { width: 2000, height: 1000, channels: 3, background: '#ffffff' } })
+      .composite([{ input: { create: { width: 500, height: 1000, channels: 3, background: '#ff0000' } }, left: 0, top: 0 }])
+      .jpeg()
+      .withMetadata({ orientation: 6 })
+      .toBuffer();
+    const out = join(dir, 'out.webp');
+    const res = await prepareStrip(input, { crop: '0,0,1000,500', tone: 'none', out });
+    // Crop 1000x500 of the displayed photo, resized to height 1600 -> 3200x1600, and it is all red.
+    assert.equal(res.width, 3200);
+    const { channels } = await sharp(out).stats();
+    const [r, g, b] = channels.map((c) => c.mean);
+    assert.ok(r > 200 && g < 60 && b < 60, `means ${r} ${g} ${b}`);
+    // And without a crop the result is portrait, as the photo is seen.
+    const full = await prepareStrip(input, { tone: 'none', out });
+    assert.equal(full.width, 800);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('favicon.svg exists', () => {
   assert.ok(existsSync('site/assets/favicon.svg'));
 });
