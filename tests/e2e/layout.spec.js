@@ -94,6 +94,20 @@ test.describe('no JavaScript', () => {
   });
 });
 
+for (const module of ['app.js', 'calendar.js', 'sound.js']) {
+  test(`falls back to the static printed view when ${module} fails to load`, async ({ page }) => {
+    await page.route(`**/${module}`, (route) => route.abort());
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveClass('no-js');
+    await expect(page.locator('.names')).toBeVisible();
+    await expect(page.locator('.date')).toHaveText('2027.08.20');
+    await expect(page.locator('.cal-primary')).toBeVisible();
+    await expect(page.locator('.cal-primary')).toHaveAttribute('href', '/save-the-date.ics');
+    await expect(page.locator('.note')).toBeVisible();
+    await expect(page.locator('.print-btn')).toBeHidden();
+  });
+}
+
 test.describe('landscape phone', () => {
   test.use({ javaScriptEnabled: false, viewport: { width: 740, height: 360 } });
 
