@@ -64,6 +64,7 @@ async function cli(argv) {
     ? await prepareStrip(await placeholderPng(), { ...opts, tone: 'none' })
     : await prepareStrip(photo, opts);
   console.log(res);
+  console.log(`Wrote ${res.width}x${res.height}. Update <img width="${res.width}" height="${res.height}"> for both assets/strip.webp images in site/index.html (npm test checks this).`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -419,7 +419,8 @@ html.no-js .etched {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 440 / 1600;
+  /* `auto`: the image's real ratio wins once it has loaded; 440/1600 only sizes the frame before that or if it fails. */
+  aspect-ratio: auto 440 / 1600;
   background: var(--paper);
 }
 

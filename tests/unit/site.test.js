@@ -69,3 +69,13 @@ test('site/ contains only shippable files', () => {
     if (rel.endsWith('.md')) assert.equal(rel, 'assets/sounds/CREDITS.md');
   }
 });
+
+test('every strip <img> width/height attributes match strip.webp', async () => {
+  const { width, height } = await sharp(join(siteDir, 'assets/strip.webp')).metadata();
+  const imgs = [...html.matchAll(/<img\b[^>]*\bsrc="assets\/strip\.webp"[^>]*>/g)].map((m) => m[0]);
+  assert.ok(imgs.length > 0);
+  for (const tag of imgs) {
+    assert.equal(tag.match(/\bwidth="(\d+)"/)?.[1], String(width), tag);
+    assert.equal(tag.match(/\bheight="(\d+)"/)?.[1], String(height), tag);
+  }
+});
