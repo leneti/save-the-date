@@ -1,4 +1,5 @@
 import { calendarLinks } from './calendar.js';
+import { createSound, vibrate } from './sound.js';
 
 // All durations in ms. The CSS custom properties below are derived from these, so one object tunes everything.
 export const TIMINGS = {
@@ -18,15 +19,37 @@ export const TIMINGS = {
   reducedStripFade: 600,
 };
 
-// Task 7 replaces these (or assigns hooks.onPress = ...). Every call is guarded, so a throwing hook never stops the print.
+const sound = createSound({
+  tick: 'assets/sounds/tick.mp3',
+  shutter: 'assets/sounds/shutter.mp3',
+  whirr: 'assets/sounds/whirr.mp3',
+  clunk: 'assets/sounds/clunk.mp3',
+});
+let stopWhirr = () => {};
+
+// Sound and vibration hang off these. Every call is guarded, so a throwing hook never stops the print.
 export const hooks = {
-  onPress() {},
-  onTick() {},
-  onFlash() {},
-  onFeedStart() {},
-  onJerk() {},
-  onLand() {},
+  onPress() {
+    sound.unlock(); // inside the user gesture
+    sound.preload(); // no-op if the idle preload already started
+    sound.play('tick');
+    vibrate(15);
+  },
+  onTick() { sound.play('tick'); },
+  onFlash() { sound.play('shutter'); },
+  onFeedStart() { stopWhirr = sound.play('whirr', { loop: true }); },
+  onJerk() { vibrate(40); },
+  onLand() {
+    stopWhirr();
+    stopWhirr = () => {};
+    sound.play('clunk');
+    vibrate(30);
+  },
 };
+
+// Fetch and decode the sounds when the browser is idle.
+if (typeof requestIdleCallback === 'function') requestIdleCallback(() => sound.preload());
+else setTimeout(() => sound.preload(), 200);
 
 const JERKS = 4;
 const ANNOUNCEMENT = 'Emilija & Dominykas, 2027.08.20';
