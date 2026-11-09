@@ -5,14 +5,15 @@ const printed = (page) =>
   expect(page.locator('.booth')).toHaveAttribute('data-state', 'printed', { timeout: 10_000 });
 
 // Records every change of <main data-state> into window.__states. <main> does not exist at document
-// start, so observe the whole document for the attribute.
+// start, so observe the whole document for the attribute. Every write is recorded, even a re-set to the same value.
 const recordStates = (page) =>
   page.addInitScript(() => {
     window.__states = [];
     new MutationObserver((records) => {
       for (const r of records) {
         const v = r.target.getAttribute('data-state');
-        if (v !== null && window.__states[window.__states.length - 1] !== v) window.__states.push(v);
+        // No dedupe: a state that is set twice (a restarted sequence) must show up as a duplicate.
+        if (v !== null) window.__states.push(v);
       }
     }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-state'] });
   });
