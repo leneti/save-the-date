@@ -172,3 +172,32 @@ function start() {
 applyCalendarLinks();
 applyTimingVars();
 for (const el of booth.querySelectorAll('.print-btn, [data-trigger]')) el.addEventListener('click', start);
+
+// ---------- Close-up ----------
+// The dialog's `open` attribute is the "zoomed" state; data-state stays `printed`.
+const zoom = document.querySelector('.zoom');
+let closing = false;
+
+function openZoom() {
+  if (zoom.open || booth.dataset.state !== 'printed') return;
+  closing = false;
+  zoom.showModal();
+  history.pushState({ zoom: true }, '');
+}
+
+// One user-close path for tap, button and Escape. The flag stops a fast second close from calling history.back() twice.
+function userClose() {
+  if (!zoom.open || closing) return;
+  closing = true;
+  if (history.state?.zoom) history.back(); // popstate closes the dialog
+  else zoom.close();
+}
+
+$('.strip').addEventListener('click', openZoom);
+zoom.addEventListener('click', userClose); // the backdrop, the image and the button all land here
+zoom.addEventListener('cancel', (e) => {
+  e.preventDefault(); // Escape: take over, so the native close and ours never both run
+  userClose();
+});
+zoom.addEventListener('close', () => { closing = false; });
+window.addEventListener('popstate', () => { if (zoom.open) zoom.close(); });

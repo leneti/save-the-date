@@ -559,10 +559,57 @@ html.no-js .etched {
 /* Only the flash state shows it, and only the WAAPI animation raises its opacity. */
 .booth[data-state="flash"] .flash { visibility: visible; }
 
+/* ---------- Close-up dialog ---------- */
+/* No display rule here: a closed <dialog> stays display:none, so it takes no space (also without JS). */
+.zoom {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: none;
+  max-height: none;
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  cursor: zoom-out;
+}
+.zoom[open] {
+  display: grid;
+  place-items: center;
+  animation: zoom-in 300ms ease-out;
+}
+.zoom::backdrop { background: rgba(20, 24, 15, 0.85); }
+.zoom img {
+  display: block;
+  max-height: 92svh;
+  max-width: 92vw;
+  width: auto;
+  height: auto;
+  box-shadow: 0 0.75rem 2.5rem rgba(0, 0, 0, 0.45);
+}
+.zoom-close {
+  position: absolute;
+  top: max(0.5rem, env(safe-area-inset-top));
+  right: 0.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(20, 24, 15, 0.6);
+  color: var(--cream);
+  font: inherit;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+@keyframes zoom-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zoom-in-scale { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
+
 /* ---------- Motion ---------- */
 
 @media (prefers-reduced-motion: no-preference) {
   .halo { animation: pulse 1.8s ease-out infinite; }
+  .zoom[open] { animation-name: zoom-in-scale; }
 
   .booth[data-state]:not([data-state="idle"]) .print-btn { transform: scale(0.92); }
   .print-btn:active { transform: scale(0.94); }
