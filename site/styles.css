@@ -496,6 +496,7 @@ html.no-js .note { opacity: 0.75; }
   inset: 0;
   background: #fff;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 

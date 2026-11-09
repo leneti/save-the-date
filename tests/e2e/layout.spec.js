@@ -13,6 +13,7 @@ test('idle shows plate, slot and print button only', async ({ page }) => {
   await expect(page.locator('.names')).toBeHidden();
   await expect(page.locator('.details')).toBeHidden();
   await expect(page.locator('.note')).toBeHidden();
+  await expect(page.locator('.flash')).toBeHidden();
 });
 
 test('no horizontal overflow in idle', async ({ page }) => {
@@ -21,13 +22,30 @@ test('no horizontal overflow in idle', async ({ page }) => {
   expect(await noOverflow(page)).toBe(true);
 });
 
-test('fonts load from same origin only', async ({ page, baseURL }) => {
+async function assertFontsLoadFromSameOrigin(page, baseURL, families) {
   const urls = [];
+  const fontStatuses = [];
   page.on('request', (r) => urls.push(r.url()));
+  page.on('response', (r) => {
+    if (r.url().endsWith('.woff2')) fontStatuses.push(r.status());
+  });
   await page.goto('/');
   await page.evaluate(() => document.fonts.ready);
   expect(urls.length).toBeGreaterThan(0);
   for (const u of urls) expect(u.startsWith(baseURL), u).toBe(true);
+  expect(fontStatuses.length).toBeGreaterThan(0);
+  expect(fontStatuses.every((s) => s === 200), `woff2 statuses: ${fontStatuses}`).toBe(true);
+  for (const family of families) {
+    const loaded = await page.evaluate(
+      (f) => document.fonts.load(`1em "${f}"`, 'Emilija 2027.08.20').then((faces) => faces.length > 0 && document.fonts.check(`1em "${f}"`, 'Emilija 2027.08.20')),
+      family,
+    );
+    expect(loaded, `${family} loaded`).toBe(true);
+  }
+}
+
+test('fonts load from same origin only (idle)', async ({ page, baseURL }) => {
+  await assertFontsLoadFromSameOrigin(page, baseURL, ['Pinyon Script', 'Josefin Sans']);
 });
 
 test.describe('no JavaScript', () => {
@@ -45,6 +63,10 @@ test.describe('no JavaScript', () => {
     await expect(page.locator('.cal-secondary')).toHaveAttribute('href', googleCalendarUrl());
     await expect(page.locator('.note')).toBeVisible();
     await expect(page.locator('.print-btn')).toBeHidden();
+  });
+
+  test('fonts load from same origin only (printed)', async ({ page, baseURL }) => {
+    await assertFontsLoadFromSameOrigin(page, baseURL, ['Pinyon Script', 'Cormorant Garamond', 'Josefin Sans']);
   });
 
   test('no horizontal overflow in printed state', async ({ page }) => {
