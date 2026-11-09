@@ -73,9 +73,12 @@
   --ink: #3a2c10;
   --paper: #f6efdc;
 
-  /* Timings that Task 5 tunes together. */
+  /* Defaults mirror TIMINGS in app.js, which sets them again on .booth so there is one source of truth. */
   --press-ms: 120ms;
-  --reveal-ms: 500ms;
+  --reveal-ms: 400ms;
+  --reveal-stagger: 200ms;
+  --feed-ms: 3000ms;
+  --reduced-fade-ms: 600ms;
 
   /* Strip geometry: width follows the viewport, then the strip's 440:1600 ratio gives its height. */
   --strip-w: clamp(4.5rem, calc((100svh - 23rem) / 3.636), min(30vw, 7.5rem));
@@ -152,26 +155,77 @@ body {
 
 /* ---------- Visibility by state ---------- */
 
-.names, .details, .note, .strip {
+/* Hidden elements use opacity 0 plus visibility hidden (Playwright counts opacity 0 as visible).
+   The details wrapper only owns visibility; its children fade in one by one. */
+.names, .strip, .date, .cal-primary, .cal-secondary, .note {
   opacity: 0;
   visibility: hidden;
 }
+.details { visibility: hidden; }
 
 .plate, .print-btn, .etched {
   opacity: 1;
   visibility: visible;
 }
 
+/* Stagger order: names, date, primary, secondary, note. */
+.names { --i: 0; }
+.date { --i: 1; }
+.cal-primary { --i: 2; }
+.cal-secondary { --i: 3; }
+.note { --i: 4; }
+
+.names, .date, .cal-primary, .cal-secondary, .note {
+  transition:
+    opacity var(--reveal-ms) ease,
+    transform var(--reveal-ms) ease,
+    visibility 0s linear;
+}
+
 .booth[data-state="printed"] .names,
-.booth[data-state="printed"] .details,
+.booth[data-state="printed"] .date,
+.booth[data-state="printed"] .cal-primary,
+.booth[data-state="printed"] .cal-secondary,
 .booth[data-state="printed"] .note,
-.booth[data-state="printed"] .strip,
 html.no-js .names,
+html.no-js .date,
+html.no-js .cal-primary,
+html.no-js .cal-secondary,
+html.no-js .note {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: calc(var(--i) * var(--reveal-stagger));
+}
+.booth[data-state="printed"] .cal-secondary,
+html.no-js .cal-secondary { opacity: 0.88; }
+.booth[data-state="printed"] .note,
+html.no-js .note { opacity: 0.75; }
+
+.booth[data-state="printed"] .details,
+.booth[data-state="printed"] .strip,
 html.no-js .details,
-html.no-js .note,
 html.no-js .strip {
   opacity: 1;
   visibility: visible;
+}
+
+/* The strip is revealed while it feeds in; the printed state keeps it. */
+.booth[data-state="printing"] .strip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* The plate, button and etched text fade out as the names arrive. */
+.plate, .print-btn, .etched {
+  transition: opacity var(--reveal-ms) ease, visibility 0s linear var(--reveal-ms);
+}
+.print-btn {
+  transition:
+    opacity var(--reveal-ms) ease,
+    visibility 0s linear var(--reveal-ms),
+    transform var(--press-ms) ease,
+    box-shadow var(--press-ms) ease;
 }
 
 .booth[data-state="printed"] .plate,
@@ -182,6 +236,12 @@ html.no-js .print-btn,
 html.no-js .etched {
   opacity: 0;
   visibility: hidden;
+}
+
+/* The etched text fades while the strip covers it. */
+.booth[data-state="printing"] .etched {
+  opacity: 0;
+  transition: opacity var(--feed-ms) linear;
 }
 
 /* ---------- Brass plate ---------- */
@@ -259,8 +319,9 @@ html.no-js .etched {
 }
 .plate-count:empty { display: none; }
 
-.booth[data-state="countdown"] .plate-text,
-.booth[data-state="countdown"] .plate-arrow {
+/* Once a number is showing, the plate's prompt gets out of its way. */
+.plate:has(.plate-count:not(:empty)) .plate-text,
+.plate:has(.plate-count:not(:empty)) .plate-arrow {
   visibility: hidden;
 }
 
@@ -351,6 +412,8 @@ html.no-js .etched {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
 }
 .strip:enabled { cursor: zoom-in; }
+/* While it is still disabled (feeding), taps fall through to the slot, which ignores them. */
+.strip:disabled { pointer-events: none; }
 
 .strip img {
   display: block;
@@ -379,7 +442,6 @@ html.no-js .etched {
     0 0 0 1px rgba(255, 244, 205, 0.3),
     0 5px 10px rgba(10, 14, 5, 0.55);
   cursor: pointer;
-  transition: transform var(--press-ms) ease, box-shadow var(--press-ms) ease;
 }
 .print-btn::after {
   content: "";
@@ -390,7 +452,6 @@ html.no-js .etched {
   box-shadow: 0 1px 0 rgba(255, 244, 205, 0.45), inset 0 1px 0 rgba(58, 44, 16, 0.2);
   pointer-events: none;
 }
-.print-btn:active { transform: scale(0.94); }
 .print-btn:focus-visible {
   outline: 2px solid var(--cream);
   outline-offset: 6px;
@@ -401,14 +462,15 @@ html.no-js .etched {
   inset: -6px;
   border-radius: 50%;
   border: 2px solid #e6cf8f;
+  opacity: 0.7;
   pointer-events: none;
-  animation: pulse 1.8s ease-out infinite;
 }
 @keyframes pulse {
   0% { transform: scale(0.9); opacity: 0.9; }
   100% { transform: scale(1.45); opacity: 0; }
 }
 
+/* The halo stops as soon as the button is pressed. */
 .booth[data-state]:not([data-state="idle"]) .halo { animation: none; opacity: 0; }
 
 /* ---------- Details ---------- */
@@ -465,7 +527,6 @@ html.no-js .etched {
   text-decoration: underline;
   text-underline-offset: 4px;
   text-decoration-thickness: 1px;
-  opacity: 0.88;
 }
 
 .cal-primary:focus-visible,
@@ -482,12 +543,8 @@ html.no-js .etched {
   font-size: 0.6875rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  opacity: 0.75;
 }
-/* `.note` fades with the rest via the shared visibility rules; its resting opacity is applied to the text colour. */
-.note { opacity: 0; }
-.booth[data-state="printed"] .note,
-html.no-js .note { opacity: 0.75; }
+/* Hidden until printed; the visibility rules above set its final opacity (0.75). */
 
 /* ---------- Flash ---------- */
 
@@ -499,13 +556,24 @@ html.no-js .note { opacity: 0.75; }
   visibility: hidden;
   pointer-events: none;
 }
+/* Only the flash state shows it, and only the WAAPI animation raises its opacity. */
+.booth[data-state="flash"] .flash { visibility: visible; }
 
-/* ---------- Reduced motion ---------- */
+/* ---------- Motion ---------- */
 
+@media (prefers-reduced-motion: no-preference) {
+  .halo { animation: pulse 1.8s ease-out infinite; }
+
+  .booth[data-state]:not([data-state="idle"]) .print-btn { transform: scale(0.92); }
+  .print-btn:active { transform: scale(0.94); }
+
+  /* Revealed elements rise 10px as they fade in. */
+  .names, .date, .cal-primary, .cal-secondary, .note { transform: translateY(10px); }
+}
+
+/* Reduced motion: no transforms at all, a static halo ring, and opacity-only transitions. */
 @media (prefers-reduced-motion: reduce) {
-  .halo {
-    animation: none;
-    opacity: 0.7;
-    transform: scale(1.1);
-  }
+  /* The strip fades in already in place, starting when the feed would start. */
+  .strip { transition: opacity var(--reduced-fade-ms) linear, visibility 0s linear; }
+  .booth[data-state="printing"] .etched { transition-duration: var(--reduced-fade-ms); }
 }
