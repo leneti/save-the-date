@@ -127,3 +127,15 @@ test('without <dialog> support the strip is inert and nothing breaks', async ({ 
   expect(await page.evaluate(() => !!history.state?.zoom)).toBe(false);
   expect(errors).toEqual([]);
 });
+
+test('close-up shows the strip upright', async ({ page }) => {
+  await printAndOpen(page);
+  await openZoom(page);
+  const angle = await page.locator('.zoom img').evaluate((img) => {
+    const t = getComputedStyle(img).transform;
+    if (t === 'none') return 0;
+    const [a, b] = t.match(/-?[\d.]+(?:e-?\d+)?/g).map(Number);
+    return (Math.atan2(b, a) * 180) / Math.PI;
+  });
+  expect(Math.abs(angle)).toBeLessThan(0.01);
+});

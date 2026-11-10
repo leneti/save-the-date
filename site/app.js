@@ -117,21 +117,27 @@ function flashAnimation() {
   );
 }
 
-// 4 distinct jerks: each is a quick move followed by a pause, in one animation, then a small landing bounce.
+// The strip emerges from under the top wall (the clip hides it), jerks down in 4 steps with no rotation,
+// then eases into its resting tilt during the landing bounce.
 function feedAnimation(strip) {
   const { jerkMove, jerkPause, bounce } = TIMINGS;
   const step = jerkMove + jerkPause;
   const total = JERKS * step + bounce;
-  // Start fully above the well (the slot has 0.625rem of padding above the strip).
-  const at = (i) => `translateY(calc(${-100 + (100 * i) / JERKS}% - ${(JERKS - i) / JERKS} * 0.625rem))`;
+  const root = getComputedStyle(document.documentElement);
+  // Travel from the rest pose's bottom edge on the clip top (design y 22) to rest (design y 379.3), whatever the strip's height.
+  const startY = -($('.slot').getBoundingClientRect().height * (379.3 - 22)) / 403;
+  const restRot = parseFloat(root.getPropertyValue('--strip-rest-rot')) || -2.2;
+  const overshoot = 0.375 * parseFloat(root.fontSize);
+  const pose = (y, deg) => `translateX(-50%) translateY(${y}px) rotate(${deg}deg)`;
+  const at = (i) => pose(startY * (1 - i / JERKS), 0);
   const frames = [];
   for (let i = 0; i < JERKS; i++) {
     frames.push({ transform: at(i), offset: (i * step) / total, easing: 'cubic-bezier(.2, .8, .3, 1)' });
     frames.push({ transform: at(i + 1), offset: (i * step + jerkMove) / total, easing: 'linear' });
   }
   frames.push({ transform: at(JERKS), offset: (JERKS * step) / total, easing: 'ease-out' });
-  frames.push({ transform: 'translateY(0.375rem)', offset: (JERKS * step + bounce * 0.4) / total, easing: 'ease-in-out' });
-  frames.push({ transform: at(JERKS), offset: 1 });
+  frames.push({ transform: pose(overshoot, restRot * 0.6), offset: (JERKS * step + bounce * 0.4) / total, easing: 'ease-in-out' });
+  frames.push({ transform: pose(0, restRot), offset: 1 });
   animate(strip, frames, { duration: total });
 }
 

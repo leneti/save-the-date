@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import sharp from 'sharp';
 import { TRAY, PANEL, STRIP_REST } from '../../scripts/tray/geometry.mjs';
 
 const STRIP_NAME = 'Emilijos ir Dominyko nuotraukų juostelė';
@@ -115,6 +116,90 @@ test('tray image failure falls back and still prints', async ({ page }) => {
   expect(bg).not.toBe('rgba(0, 0, 0, 0)');
   expect(bg).not.toBe('transparent');
   expect(errors).toEqual([]);
+});
+
+// Samples the strip and clip every frame from onFeedStart until the booth is printed. Wraps the hooks, so
+// the real ones still run. Each sample records whether onLand had fired yet.
+async function installFeedSampler(page) {
+  await page.goto('/');
+  await page.evaluate(async () => {
+    const { hooks } = await import('/app.js');
+    const strip = document.querySelector('.strip');
+    const clip = document.querySelector('.tray-clip');
+    const booth = document.querySelector('.booth');
+    window.__feed = { samples: [], landed: false };
+    const sample = () => {
+      const [a, b] = getComputedStyle(strip).transform.match(/-?[\d.]+(?:e-?\d+)?/g).map(Number);
+      window.__feed.samples.push({
+        stripBottom: strip.getBoundingClientRect().bottom,
+        clipTop: clip.getBoundingClientRect().top,
+        overflow: getComputedStyle(clip).overflow,
+        angle: (Math.atan2(b, a) * 180) / Math.PI,
+        landed: window.__feed.landed,
+      });
+      if (booth.dataset.state === 'printing') requestAnimationFrame(sample);
+    };
+    const onFeedStart = hooks.onFeedStart;
+    hooks.onFeedStart = (...args) => {
+      const result = onFeedStart(...args);
+      sample();
+      return result;
+    };
+    const onLand = hooks.onLand;
+    hooks.onLand = (...args) => {
+      window.__feed.landed = true;
+      return onLand(...args);
+    };
+  });
+}
+
+async function printAndSample(page) {
+  await installFeedSampler(page);
+  await page.locator('.print-btn').click();
+  await expect(page.locator('.booth')).toHaveAttribute('data-state', 'printed', { timeout: 10_000 });
+  return page.evaluate(() => window.__feed);
+}
+
+function expectHiddenStart(feed) {
+  expect(feed.samples.length).toBeGreaterThan(10);
+  expect(feed.samples[0].stripBottom, 'strip bottom vs clip top in the first sample').toBeLessThanOrEqual(
+    feed.samples[0].clipTop + 1,
+  );
+  for (const s of feed.samples) expect(['clip', 'hidden']).toContain(s.overflow);
+}
+
+test('the strip starts hidden under the top wall', async ({ page }) => {
+  expectHiddenStart(await printAndSample(page));
+});
+
+test('no rotation during the jerks', async ({ page }) => {
+  const feed = await printAndSample(page);
+  const jerking = feed.samples.filter((s) => !s.landed);
+  expect(jerking.length).toBeGreaterThan(10);
+  for (const s of jerking) expect(Math.abs(s.angle)).toBeLessThanOrEqual(0.3);
+});
+
+test('lands tilted on the ledge', async ({ page }) => {
+  await printAndSample(page);
+  await expectRestPose(page);
+});
+
+test('reduced motion ends in the same pose', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.locator('.print-btn').click();
+  await expect(page.locator('.booth')).toHaveAttribute('data-state', 'printed', { timeout: 10_000 });
+  await expectRestPose(page);
+});
+
+test('a strip photo with a different ratio still starts hidden and lands on the ledge', async ({ page }) => {
+  const body = await sharp({ create: { width: 440, height: 1300, channels: 3, background: '#d8c8a8' } })
+    .webp()
+    .toBuffer();
+  await page.route('**/assets/strip.webp', (r) => r.fulfill({ body, contentType: 'image/webp' }));
+  const feed = await printAndSample(page);
+  expectHiddenStart(feed);
+  await expectRestPose(page);
 });
 
 test.describe('no JavaScript', () => {
