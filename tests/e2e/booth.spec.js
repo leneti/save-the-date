@@ -64,20 +64,68 @@ async function expectRestPose(page) {
 const noOverflow = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 
+// The socket around the print button is its ::before, inset by a negative amount; its outer edge is the
+// bottom anchor for centring.
+const socketOverhang = (page) =>
+  page.locator('.print-btn').evaluate((el) => -parseFloat(getComputedStyle(el, '::before').bottom));
+
 async function expectIdleCentred(page) {
   await page.goto('/');
   await expect(page.locator('.print-btn')).toBeVisible();
   const vh = page.viewportSize().height;
   const plate = await rectOf(page, '.plate');
   const btn = await rectOf(page, '.print-btn');
-  test.skip(btn.y + btn.height > vh, 'idle content is taller than the viewport');
+  const socketBottom = btn.y + btn.height + (await socketOverhang(page));
+  test.skip(socketBottom > vh, 'idle content is taller than the viewport');
   const top = plate.y;
-  const bottom = vh - (btn.y + btn.height);
+  const bottom = vh - socketBottom;
   expect(Math.abs(top - bottom), `top gap ${top}, bottom gap ${bottom}`).toBeLessThanOrEqual(TOLERANCE);
 }
 
 test('idle is vertically centred', async ({ page }) => {
   await expectIdleCentred(page);
+});
+
+test('the plate has no arrow and its text is vertically centred', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.plate-arrow')).toHaveCount(0);
+  const plate = await rectOf(page, '.plate');
+  const text = await rectOf(page, '.plate-text');
+  const offset = (text.y + text.height / 2) - (plate.y + plate.height / 2);
+  expect(Math.abs(offset), `text centre is ${offset}px from the plate centre`).toBeLessThanOrEqual(2);
+});
+
+test('the print button keeps its size and sits in a recessed socket', async ({ page }) => {
+  await page.goto('/');
+  const btn = await rectOf(page, '.print-btn');
+  expect(btn.width).toBe(64);
+  expect(btn.height).toBe(64);
+  const socket = await page.locator('.print-btn').evaluate((el) => {
+    const cs = getComputedStyle(el, '::before');
+    return { content: cs.content, radius: cs.borderTopLeftRadius, z: cs.zIndex, w: parseFloat(cs.width), h: parseFloat(cs.height) };
+  });
+  expect(socket.content).not.toBe('none');
+  expect(socket.radius).toBe('50%');
+  expect(socket.z).toBe('-1');
+  // A dark ring about 7 px wide around the 64 px button.
+  expect(socket.w).toBe(78);
+  expect(socket.h).toBe(78);
+});
+
+test('the brass tokens and the overhead light are in place', async ({ page }) => {
+  await page.goto('/');
+  const css = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    return {
+      tokens: ['--brass-hi', '--brass-mid', '--brass-lo', '--brass-deep', '--polished-brass'].map((n) => root.getPropertyValue(n).trim()),
+      stack: root.getPropertyValue('--brass-stack'),
+      light: getComputedStyle(document.body).backgroundImage,
+    };
+  });
+  for (const t of css.tokens) expect(t).not.toBe('');
+  expect(css.tokens[4]).toMatch(/^linear-gradient\(/);
+  expect(css.stack, 'brass stack ends with the polished gradient').toContain(css.tokens[4]);
+  expect(css.light).toMatch(/radial-gradient\(.*rgb\(75, 87, 60\)/);
 });
 
 test('idle fits the viewport on iphone and pixel', async ({ page }, testInfo) => {

@@ -67,9 +67,6 @@
   --olive: #3f4a32;
   --olive-deep: #313a26;
   --cream: #efe7cf;
-  --brass-light: #f0dca2;
-  --brass: #a7843f;
-  --brass-dark: #8a6a2c;
   --ink: #3a2c10;
   --paper: #f6efdc;
 
@@ -99,14 +96,24 @@
   --strip-rest-bottom: 3.171%;
   --strip-rest-rot: -2.2deg;
 
-  /* Fine horizontal brush streaks. */
-  --brush-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.9' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.1 0 0 0 0 0.02 0 0 0 0.55 -0.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Brass, sampled from the rendered tray's frame with scripts/sample-brass.mjs (3x3 px means on tray.webp):
+     glint (123, 8) #fde0b4, top rim (90, 4) #bc8d41, left rim (6, 600) #9d7129, right rim (522, 600) #987126,
+     bottom rim (264, 1204) #946d28. The deep tone is the bottom rim darkened, for thickness edges and screw feet. */
+  --brass-hi: #fde0b4;
+  --brass-mid: #bc8d41;
+  --brass-lo: #9d7129;
+  --brass-deep: #5e4519;
 
-  /* Brushed brass: streak texture, fine vertical grain, then a soft sheen over a metallic gradient. */
-  --brass-stack:
-    var(--brush-noise),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, rgba(0, 0, 0, 0.045) 1px 2px),
-    linear-gradient(135deg, #e6cf8f 0%, var(--brass) 32%, var(--brass-light) 54%, var(--brass-dark) 100%);
+  /* Polished brass: soft specular bands like the render. The dark bands sit at the ends so the ink text,
+     which crosses the middle of the plate and the calendar button, stays above 4.5:1 on every band it touches. */
+  --polished-brass: linear-gradient(160deg,
+    #fbdca8 0%, #d3a45a 11%, #c8994e 24%, #dcaf63 42%, var(--brass-hi) 55%,
+    #d4a554 66%, #cd9e52 80%, var(--brass-mid) 93%, var(--brass-lo) 98%, #7c5a22 100%);
+
+  /* Very faint horizontal brush streaks. */
+  --brush-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.9' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.1 0 0 0 0 0.02 0 0 0 0.16 -0.03'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  --brass-stack: var(--brush-noise), var(--polished-brass);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -123,7 +130,8 @@ body {
   min-height: 100vh;
   min-height: 100svh;
   background-color: var(--olive);
-  background-image: radial-gradient(120% 70% at 50% 0%, rgba(255, 255, 230, 0.07), transparent 70%);
+  /* Soft overhead light around the booth. The body is the viewport tall, so the gradient needs no fixed attachment (unreliable on iOS). */
+  background-image: radial-gradient(ellipse 120% 75% at 50% 38%, #4b573c 0%, var(--olive) 52%, var(--olive-deep) 100%);
   color: var(--cream);
   font-family: "Josefin Sans", system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
@@ -151,6 +159,8 @@ body {
   min-height: 100vh;
   min-height: 100svh;
   margin-inline: auto;
+  /* A stacking context of its own, so the print button's z-index -1 socket paints above the body's background. */
+  isolation: isolate;
   padding:
     max(1.5rem, env(safe-area-inset-top))
     max(1.25rem, env(safe-area-inset-right))
@@ -276,17 +286,19 @@ html.no-js .etched {
   text-align: center;
   color: var(--ink);
   background: var(--brass-stack);
-  border-radius: 6px;
+  border-radius: 5px;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 244, 205, 0.55),
-    inset 0 2px 3px rgba(255, 255, 255, 0.25),
-    inset 0 -3px 5px rgba(80, 55, 10, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.12),
-    0 6px 14px rgba(15, 20, 8, 0.5);
+    inset 0 1px 0 rgba(255, 240, 200, 0.85),
+    inset 0 -1px 0 rgba(60, 40, 8, 0.45),
+    inset 1px 0 0 rgba(255, 240, 200, 0.3),
+    inset -1px 0 0 rgba(60, 40, 8, 0.3),
+    0 2px 0 var(--brass-deep),
+    0 3px 1px rgba(0, 0, 0, 0.35),
+    0 14px 22px -4px rgba(8, 10, 5, 0.6);
   cursor: pointer;
 }
 
-/* Four slotted screws: two pseudo-elements, each carrying a left and a right head. */
+/* Four domed screws with a slot: two pseudo-elements, each carrying a left and a right head. */
 .plate::before,
 .plate::after {
   content: "";
@@ -296,31 +308,27 @@ html.no-js .etched {
   height: 10px;
   pointer-events: none;
   background:
-    linear-gradient(rgba(58, 44, 16, 0.85), rgba(58, 44, 16, 0.85)) left 2px center / 6px 1.5px no-repeat,
-    linear-gradient(rgba(58, 44, 16, 0.85), rgba(58, 44, 16, 0.85)) right 2px center / 6px 1.5px no-repeat,
-    radial-gradient(circle at 35% 30%, #d9bf7a 0%, #8a6a2c 55%, #5f4818 100%) left / 10px 10px no-repeat,
-    radial-gradient(circle at 35% 30%, #d9bf7a 0%, #8a6a2c 55%, #5f4818 100%) right / 10px 10px no-repeat;
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.28));
+    linear-gradient(rgba(40, 28, 8, 0.6), rgba(40, 28, 8, 0.6)) left 2px center / 6px 1.5px no-repeat,
+    linear-gradient(rgba(40, 28, 8, 0.6), rgba(40, 28, 8, 0.6)) right 2px center / 6px 1.5px no-repeat,
+    radial-gradient(circle at 35% 30%, #fff1cf 0%, var(--brass-mid) 45%, var(--brass-deep) 100%) left / 10px 10px no-repeat,
+    radial-gradient(circle at 35% 30%, #fff1cf 0%, var(--brass-mid) 45%, var(--brass-deep) 100%) right / 10px 10px no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
 }
 .plate::before { top: 7px; }
 .plate::after { bottom: 7px; }
 
+/* Engraved: ink with a light lower edge. Josefin's caps sit high, so the line is nudged to the optical centre,
+   and the trailing letter-space is pulled back so it is centred sideways too. */
 .plate-text {
+  position: relative;
+  top: 0.08em;
+  margin-right: -0.16em;
   font-weight: 600;
   font-size: 0.8125rem;
   line-height: 1.4;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.45);
-}
-
-.plate-arrow {
-  margin-top: 0.15rem;
-  font-family: "Josefin Sans", system-ui, sans-serif;
-  font-weight: 400;
-  font-size: 1.35rem;
-  line-height: 1;
-  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.65), 0 -1px 0 rgba(60, 40, 8, 0.25);
 }
 
 .plate-count {
@@ -331,14 +339,13 @@ html.no-js .etched {
   font-weight: 600;
   font-size: 3rem;
   line-height: 1;
-  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.5);
+  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.65), 0 -1px 0 rgba(60, 40, 8, 0.25);
   pointer-events: none;
 }
 .plate-count:empty { display: none; }
 
 /* Once a number is showing, the plate's prompt gets out of its way. */
-.plate:has(.plate-count:not(:empty)) .plate-text,
-.plate:has(.plate-count:not(:empty)) .plate-arrow {
+.plate:has(.plate-count:not(:empty)) .plate-text {
   visibility: hidden;
 }
 
@@ -374,7 +381,7 @@ html.no-js .etched {
   /* The dark bronze under the image is the failure fallback; the inset brass line then stands in for the rim. */
   background: url("assets/tray.webp") center / 100% 100% no-repeat, #2a2318;
   box-shadow:
-    inset 0 0 0 2px var(--brass),
+    inset 0 0 0 2px var(--brass-mid),
     0 4px 2px rgba(0, 0, 0, 0.3),
     0 18px 26px -6px rgba(8, 10, 5, 0.65);
   cursor: pointer;
@@ -456,27 +463,43 @@ html.no-js .etched {
 .print-btn {
   position: relative;
   align-self: end;
+  /* The socket reaches 7px past the button. Aligned by margin box, this keeps its outer edge on the row's bottom. */
+  margin-bottom: 7px;
   width: 4rem;
   height: 4rem;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--brass-stack);
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255, 244, 214, 0.95) 0, rgba(255, 240, 200, 0.35) 18%, rgba(255, 240, 200, 0) 38%),
+    var(--brush-noise),
+    linear-gradient(150deg, var(--brass-hi) 0%, var(--brass-mid) 30%, var(--brass-lo) 62%, var(--brass-deep) 100%);
   box-shadow:
-    inset 0 -4px 6px rgba(70, 48, 8, 0.35),
-    inset 0 2px 3px rgba(255, 250, 225, 0.55),
-    inset 0 0 0 4px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(255, 244, 205, 0.3),
-    0 5px 10px rgba(10, 14, 5, 0.55);
+    inset 0 -5px 7px rgba(60, 40, 8, 0.45),
+    inset 0 2px 2px rgba(255, 240, 200, 0.7),
+    0 0 0 1px rgba(60, 40, 8, 0.6),
+    0 2px 0 var(--brass-deep),
+    0 6px 10px rgba(5, 7, 3, 0.6);
   cursor: pointer;
+}
+/* The recessed socket: a dark ring 7px wide around the button, drawn behind it. Its middle is clear. */
+.print-btn::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(circle closest-side, transparent 0 80%, rgba(12, 9, 4, 0.78) 84%, rgba(12, 9, 4, 0.5) 94%, rgba(12, 9, 4, 0.12) 100%);
+  box-shadow: inset 0 3px 4px rgba(0, 0, 0, 0.5);
 }
 .print-btn::after {
   content: "";
   position: absolute;
   inset: 14px;
   border-radius: 50%;
-  border: 1.5px solid rgba(58, 44, 16, 0.5);
-  box-shadow: 0 1px 0 rgba(255, 244, 205, 0.45), inset 0 1px 0 rgba(58, 44, 16, 0.2);
+  border: 1.5px solid rgba(58, 44, 16, 0.55);
+  box-shadow: 0 1px 0 rgba(255, 240, 200, 0.55), inset 0 1px 0 rgba(58, 44, 16, 0.25);
   pointer-events: none;
 }
 .print-btn:focus-visible {
@@ -538,10 +561,12 @@ html.no-js .etched {
   letter-spacing: 0.16em;
   text-decoration: none;
   background: var(--brass-stack);
+  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.65), 0 -1px 0 rgba(60, 40, 8, 0.25);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 244, 205, 0.45),
-    inset 0 -2px 3px rgba(80, 55, 10, 0.3),
-    0 3px 7px rgba(10, 14, 5, 0.45);
+    inset 0 1px 0 rgba(255, 240, 200, 0.85),
+    inset 0 -1px 0 rgba(60, 40, 8, 0.45),
+    0 2px 0 var(--brass-deep),
+    0 8px 14px -4px rgba(8, 10, 5, 0.6);
 }
 
 .cal-secondary {
