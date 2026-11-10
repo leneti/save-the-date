@@ -1,5 +1,5 @@
-// Dev helper (not shipped): prints the mean colour of small regions of the rendered tray's brass frame,
-// to keep the CSS brass tokens in step with site/assets/tray.webp.
+// Dev helper (not shipped): prints the mean colour of small regions of the rendered tray's frame,
+// for comparing the CSS metal tokens with site/assets/tray.webp.
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';

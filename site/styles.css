@@ -67,7 +67,7 @@
   --olive: #3f4a32;
   --olive-deep: #313a26;
   --cream: #efe7cf;
-  --ink: #3a2c10;
+  --ink: #2e291c;
   --paper: #f6efdc;
 
   /* Defaults mirror TIMINGS in app.js, which sets them again on .booth so there is one source of truth. */
@@ -95,25 +95,29 @@
   --strip-rest-w: 0.47727;
   --strip-rest-bottom: 3.171%;
   --strip-rest-rot: -2.2deg;
+  /* How far the resting strip's bottom edge lies below the top of the clip, as a share of the slot width: (379.3 - 22) / 176. */
+  --strip-drop: 2.03011;
 
-  /* Brass, sampled from the rendered tray's frame with scripts/sample-brass.mjs (3x3 px means on tray.webp):
-     glint (123, 8) #fde0b4, top rim (90, 4) #bc8d41, left rim (6, 600) #9d7129, right rim (522, 600) #987126,
-     bottom rim (264, 1204) #946d28. The deep tone is the bottom rim darkened, for thickness edges and screw feet. */
-  --brass-hi: #fde0b4;
-  --brass-mid: #bc8d41;
-  --brass-lo: #9d7129;
-  --brass-deep: #5e4519;
+  /* Champagne metal (warm nickel silver) for the plate and the buttons, to go with the rendered tray. The four
+     tones and the gradient are the earlier brass ones with the hue and saturation changed and the lightness kept. */
+  --metal-hi: #eee7d4;
+  --metal-mid: #b1a585;
+  --metal-lo: #a59465;
+  --metal-deep: #574e33;
+  /* Glints and shaded edges, as "r, g, b" for rgba(). */
+  --glint: 255, 250, 236;
+  --shade: 50, 40, 18;
 
-  /* Polished brass: soft specular bands like the render. The dark bands sit at the ends so the ink text,
-     which crosses the middle of the plate and the calendar button, stays above 4.5:1 on every band it touches. */
-  --polished-brass: linear-gradient(160deg,
-    #fbdca8 0%, #d3a45a 11%, #c8994e 24%, #dcaf63 42%, var(--brass-hi) 55%,
-    #d4a554 66%, #cd9e52 80%, var(--brass-mid) 93%, var(--brass-lo) 98%, #7c5a22 100%);
+  /* Polished metal: soft specular bands. The dark bands sit at the ends so the ink text, which crosses the middle
+     of the plate and the calendar button, stays above 4.5:1 on every band it touches (6.6:1 or more today). */
+  --polished-metal: linear-gradient(160deg,
+    #eae2cd 0%, #c3b798 11%, #baaf8f 24%, #cabe9f 42%, var(--metal-hi) 55%,
+    #c2b695 66%, #beb292 80%, var(--metal-mid) 93%, var(--metal-lo) 98%, #948458 100%);
 
   /* Very faint horizontal brush streaks. */
-  --brush-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.9' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.1 0 0 0 0 0.02 0 0 0 0.16 -0.03'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --brush-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.9' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.1 0 0 0 0 0.05 0 0 0 0.16 -0.03'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 
-  --brass-stack: var(--brush-noise), var(--polished-brass);
+  --metal-stack: var(--brush-noise), var(--polished-metal);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -272,7 +276,7 @@ html.no-js .etched {
   transition: opacity var(--feed-ms) linear;
 }
 
-/* ---------- Brass plate ---------- */
+/* ---------- Plate ---------- */
 
 .plate {
   position: relative;
@@ -286,14 +290,14 @@ html.no-js .etched {
   justify-content: center;
   text-align: center;
   color: var(--ink);
-  background: var(--brass-stack);
+  background: var(--metal-stack);
   border-radius: 5px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 240, 200, 0.85),
-    inset 0 -1px 0 rgba(60, 40, 8, 0.45),
-    inset 1px 0 0 rgba(255, 240, 200, 0.3),
-    inset -1px 0 0 rgba(60, 40, 8, 0.3),
-    0 2px 0 var(--brass-deep),
+    inset 0 1px 0 rgba(var(--glint), 0.85),
+    inset 0 -1px 0 rgba(var(--shade), 0.45),
+    inset 1px 0 0 rgba(var(--glint), 0.3),
+    inset -1px 0 0 rgba(var(--shade), 0.3),
+    0 2px 0 var(--metal-deep),
     0 3px 1px rgba(0, 0, 0, 0.35),
     0 14px 22px -4px rgba(8, 10, 5, 0.6);
   cursor: pointer;
@@ -310,12 +314,12 @@ html.no-js .etched {
   height: 10px;
   pointer-events: none;
   background:
-    linear-gradient(rgba(40, 28, 8, 0.6), rgba(40, 28, 8, 0.6)) left 2px center / 6px 1.5px no-repeat,
-    linear-gradient(rgba(40, 28, 8, 0.6), rgba(40, 28, 8, 0.6)) right 2px center / 6px 1.5px no-repeat,
-    radial-gradient(circle at 36% 30%, rgba(255, 241, 207, 0.95) 0, rgba(255, 241, 207, 0) 3px) left / 10px 10px no-repeat,
-    radial-gradient(circle at 36% 30%, rgba(255, 241, 207, 0.95) 0, rgba(255, 241, 207, 0) 3px) right / 10px 10px no-repeat,
-    radial-gradient(circle closest-side, var(--brass-mid) 0, var(--brass-lo) 55%, var(--brass-deep) calc(100% - 0.75px), transparent 100%) left / 10px 10px no-repeat,
-    radial-gradient(circle closest-side, var(--brass-mid) 0, var(--brass-lo) 55%, var(--brass-deep) calc(100% - 0.75px), transparent 100%) right / 10px 10px no-repeat;
+    linear-gradient(rgba(var(--shade), 0.6), rgba(var(--shade), 0.6)) left 2px center / 6px 1.5px no-repeat,
+    linear-gradient(rgba(var(--shade), 0.6), rgba(var(--shade), 0.6)) right 2px center / 6px 1.5px no-repeat,
+    radial-gradient(circle at 36% 30%, rgba(var(--glint), 0.95) 0, rgba(var(--glint), 0) 3px) left / 10px 10px no-repeat,
+    radial-gradient(circle at 36% 30%, rgba(var(--glint), 0.95) 0, rgba(var(--glint), 0) 3px) right / 10px 10px no-repeat,
+    radial-gradient(circle closest-side, var(--metal-mid) 0, var(--metal-lo) 55%, var(--metal-deep) calc(100% - 0.75px), transparent 100%) left / 10px 10px no-repeat,
+    radial-gradient(circle closest-side, var(--metal-mid) 0, var(--metal-lo) 55%, var(--metal-deep) calc(100% - 0.75px), transparent 100%) right / 10px 10px no-repeat;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
 }
 .plate::before { top: 7px; }
@@ -332,7 +336,7 @@ html.no-js .etched {
   line-height: 1.4;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.65), 0 -1px 0 rgba(60, 40, 8, 0.25);
+  text-shadow: 0 1px 0 rgba(var(--glint), 0.65), 0 -1px 0 rgba(var(--shade), 0.25);
 }
 
 .plate-count {
@@ -343,7 +347,7 @@ html.no-js .etched {
   font-weight: 600;
   font-size: 3rem;
   line-height: 1;
-  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.65), 0 -1px 0 rgba(60, 40, 8, 0.25);
+  text-shadow: 0 1px 0 rgba(var(--glint), 0.65), 0 -1px 0 rgba(var(--shade), 0.25);
   pointer-events: none;
 }
 .plate-count:empty { display: none; }
@@ -382,14 +386,16 @@ html.no-js .etched {
   width: var(--slot-w);
   aspect-ratio: 176 / 403;
   border-radius: calc(var(--slot-w) * 7 / 176);
-  /* Under the image sit the failure fallback layers: dark bronze inside a 2px brass edge. The image covers both, so the render's own bevel shows. */
+  /* Under the image sit the failure fallback layers: the interior's tone inside a 2px metal edge. The image covers both, so the render's own frame shows. */
   background:
     url("assets/tray.webp") center / 100% 100% no-repeat,
-    linear-gradient(#2a2318, #2a2318) center / calc(100% - 4px) calc(100% - 4px) no-repeat,
-    var(--brass-mid);
+    linear-gradient(#c7bea8, #c7bea8) center / calc(100% - 4px) calc(100% - 4px) no-repeat,
+    var(--metal-mid);
+  /* The frame's shadow on the wall. The light comes from the upper left, as in the render. */
   box-shadow:
-    0 4px 2px rgba(0, 0, 0, 0.3),
-    0 18px 26px -6px rgba(8, 10, 5, 0.65);
+    0 1px 1px rgba(0, 0, 0, 0.5),
+    2px 5px 5px -1px rgba(0, 0, 0, 0.38),
+    4px 18px 26px -8px rgba(8, 10, 5, 0.66);
   cursor: pointer;
 }
 
@@ -404,8 +410,9 @@ html.no-js .etched {
   font-size: calc(var(--slot-w) * 0.19);
   line-height: 1.05;
   text-wrap: balance;
-  color: #c9ac6a;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6), 0 -1px 0 rgba(0, 0, 0, 0.35);
+  /* Engraved into light metal: dark, with a light lower edge. */
+  color: rgba(66, 54, 26, 0.74);
+  text-shadow: 0 1px 0 rgba(255, 250, 232, 0.5), 0 -0.5px 0 rgba(40, 30, 8, 0.3);
   pointer-events: none;
 }
 
@@ -419,20 +426,18 @@ html.no-js .etched {
   pointer-events: none;
 }
 
-/* The shadow the top wall casts on the back panel, drawn over the strip. */
+/* The shadow the top wall casts on the paper. The render already has this shadow on the metal, so it is drawn on
+   the strip only: the element lives inside the strip (which clips it) and sits where the top of the clip is when the
+   strip is at rest. While the strip feeds, app.js moves it the opposite way, so it stays under the top wall. */
 .tray-shade {
   position: absolute;
-  inset: var(--panel-t) var(--panel-r) var(--panel-b) var(--panel-l);
-  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--slot-w) * (var(--strip-drop) - 24 / 176));
+  height: calc(var(--slot-w) * 24 / 176);
   pointer-events: none;
-  background:
-    linear-gradient(to bottom,
-      rgba(0, 0, 0, 0.72),
-      rgba(0, 0, 0, 0.38) calc(var(--slot-w) * 14 / 176),
-      rgba(0, 0, 0, 0.12) calc(var(--slot-w) * 34 / 176),
-      transparent calc(var(--slot-w) * 56 / 176)),
-    linear-gradient(to right, rgba(0, 0, 0, 0.25), transparent calc(var(--slot-w) * 14 / 176)),
-    linear-gradient(to left, rgba(0, 0, 0, 0.18), transparent calc(var(--slot-w) * 14 / 176));
+  background: linear-gradient(to bottom,
+    rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.42) 25%, rgba(0, 0, 0, 0.22) 58%, rgba(0, 0, 0, 0.06) 83%, transparent);
 }
 .strip {
   position: absolute;
@@ -449,7 +454,14 @@ html.no-js .etched {
   cursor: default;
   transform: translateX(-50%) rotate(var(--strip-rest-rot));
   transform-origin: 50% 50%;
-  box-shadow: 0 5px 6px -1px rgba(0, 0, 0, 0.55), 0 14px 16px -6px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  overflow: clip;
+  /* Softer than on a dark interior, with a little shadow to the sides so the paper lifts off the light metal. */
+  box-shadow:
+    0 5px 6px -1px rgba(0, 0, 0, 0.5),
+    0 14px 16px -6px rgba(0, 0, 0, 0.4),
+    3px 0 6px -2px rgba(0, 0, 0, 0.32),
+    -2px 0 4px -2px rgba(0, 0, 0, 0.22);
 }
 .strip:enabled { cursor: zoom-in; pointer-events: auto; }
 /* While it is still disabled (feeding), taps fall through to the slot, which ignores them. */
@@ -476,15 +488,16 @@ html.no-js .etched {
   padding: 0;
   border: 0;
   border-radius: 50%;
+  /* A turned metal face: the light sweeps around the centre, with a hot spot at the upper left and a soft bounce at the lower right. */
   background:
-    radial-gradient(circle at 36% 28%, rgba(255, 244, 214, 0.95) 0, rgba(255, 240, 200, 0.35) 18%, rgba(255, 240, 200, 0) 38%),
-    var(--brush-noise),
-    linear-gradient(150deg, var(--brass-hi) 0%, var(--brass-mid) 30%, var(--brass-lo) 62%, var(--brass-deep) 100%);
+    radial-gradient(circle at 36% 28%, rgba(var(--glint), 0.95) 0, rgba(var(--glint), 0.35) 18%, rgba(var(--glint), 0) 38%),
+    radial-gradient(circle at 62% 78%, rgba(250, 238, 204, 0.35) 0, rgba(250, 238, 204, 0) 30%),
+    conic-gradient(from 210deg, #efe7cd, #a99d7c 18%, #73684a 34%, #c4b896 52%, #f5eed8 66%, #928663 82%, #efe7cd);
   box-shadow:
-    inset 0 -5px 7px rgba(60, 40, 8, 0.45),
-    inset 0 2px 2px rgba(255, 240, 200, 0.7),
-    0 0 0 1px rgba(60, 40, 8, 0.6),
-    0 2px 0 var(--brass-deep),
+    inset 0 -5px 7px rgba(var(--shade), 0.45),
+    inset 0 2px 2px rgba(var(--glint), 0.8),
+    0 0 0 1px rgba(var(--shade), 0.6),
+    0 2px 0 var(--metal-deep),
     0 6px 10px rgba(5, 7, 3, 0.6);
   cursor: pointer;
 }
@@ -504,8 +517,8 @@ html.no-js .etched {
   position: absolute;
   inset: 14px;
   border-radius: 50%;
-  border: 1.5px solid rgba(58, 44, 16, 0.55);
-  box-shadow: 0 1px 0 rgba(255, 240, 200, 0.55), inset 0 1px 0 rgba(58, 44, 16, 0.25);
+  border: 1.5px solid rgba(var(--shade), 0.55);
+  box-shadow: 0 1px 0 rgba(var(--glint), 0.55), inset 0 1px 0 rgba(var(--shade), 0.25);
   pointer-events: none;
 }
 .print-btn:focus-visible {
@@ -517,7 +530,7 @@ html.no-js .etched {
   position: absolute;
   inset: -6px;
   border-radius: 50%;
-  border: 2px solid #e6cf8f;
+  border: 2px solid #ece2c2;
   opacity: 0.7;
   pointer-events: none;
 }
@@ -566,12 +579,12 @@ html.no-js .etched {
   font-size: 0.75rem;
   letter-spacing: 0.16em;
   text-decoration: none;
-  background: var(--brass-stack);
-  text-shadow: 0 1px 0 rgba(255, 244, 205, 0.65), 0 -1px 0 rgba(60, 40, 8, 0.25);
+  background: var(--metal-stack);
+  text-shadow: 0 1px 0 rgba(var(--glint), 0.65), 0 -1px 0 rgba(var(--shade), 0.25);
   box-shadow:
-    inset 0 1px 0 rgba(255, 240, 200, 0.85),
-    inset 0 -1px 0 rgba(60, 40, 8, 0.45),
-    0 2px 0 var(--brass-deep),
+    inset 0 1px 0 rgba(var(--glint), 0.85),
+    inset 0 -1px 0 rgba(var(--shade), 0.45),
+    0 2px 0 var(--metal-deep),
     0 8px 14px -4px rgba(8, 10, 5, 0.6);
 }
 

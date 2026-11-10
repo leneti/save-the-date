@@ -118,7 +118,8 @@ function flashAnimation() {
 }
 
 // The strip emerges from under the top wall (the clip hides it), jerks down in 4 steps with no rotation,
-// then eases into its resting tilt during the landing bounce.
+// then eases into its resting tilt during the landing bounce. The top wall's shadow lives inside the strip and
+// moves the opposite way, so it stays put under the wall while the paper slides through it.
 function feedAnimation(strip) {
   const { jerkMove, jerkPause, bounce } = TIMINGS;
   const step = jerkMove + jerkPause;
@@ -128,17 +129,19 @@ function feedAnimation(strip) {
   const startY = -($('.slot').getBoundingClientRect().height * (379.3 - 22)) / 403;
   const restRot = parseFloat(root.getPropertyValue('--strip-rest-rot')) || -2.2;
   const overshoot = 0.375 * parseFloat(root.fontSize);
-  const pose = (y, deg) => `translateX(-50%) translateY(${y}px) rotate(${deg}deg)`;
-  const at = (i) => pose(startY * (1 - i / JERKS), 0);
-  const frames = [];
+  const at = (i) => startY * (1 - i / JERKS);
+  const poses = []; // { y, deg, offset, easing }
   for (let i = 0; i < JERKS; i++) {
-    frames.push({ transform: at(i), offset: (i * step) / total, easing: 'cubic-bezier(.2, .8, .3, 1)' });
-    frames.push({ transform: at(i + 1), offset: (i * step + jerkMove) / total, easing: 'linear' });
+    poses.push({ y: at(i), deg: 0, offset: (i * step) / total, easing: 'cubic-bezier(.2, .8, .3, 1)' });
+    poses.push({ y: at(i + 1), deg: 0, offset: (i * step + jerkMove) / total, easing: 'linear' });
   }
-  frames.push({ transform: at(JERKS), offset: (JERKS * step) / total, easing: 'ease-out' });
-  frames.push({ transform: pose(overshoot, restRot * 0.6), offset: (JERKS * step + bounce * 0.4) / total, easing: 'ease-in-out' });
-  frames.push({ transform: pose(0, restRot), offset: 1 });
-  animate(strip, frames, { duration: total });
+  poses.push({ y: at(JERKS), deg: 0, offset: (JERKS * step) / total, easing: 'ease-out' });
+  poses.push({ y: overshoot, deg: restRot * 0.6, offset: (JERKS * step + bounce * 0.4) / total, easing: 'ease-in-out' });
+  poses.push({ y: 0, deg: restRot, offset: 1 });
+  const frames = (transform) => poses.map(({ offset, easing, ...pose }) => ({ transform: transform(pose), offset, ...(easing && { easing }) }));
+  animate(strip, frames(({ y, deg }) => `translateX(-50%) translateY(${y}px) rotate(${deg}deg)`), { duration: total });
+  const shade = strip.querySelector('.tray-shade');
+  if (shade) animate(shade, frames(({ y }) => `translateY(${-y}px)`), { duration: total });
 }
 
 let running = false;

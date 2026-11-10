@@ -113,19 +113,19 @@ test('the print button keeps its size and sits in a recessed socket', async ({ p
   expect(socket.h).toBe(78);
 });
 
-test('the brass tokens and the overhead light are in place', async ({ page }) => {
+test('the metal tokens and the overhead light are in place', async ({ page }) => {
   await page.goto('/');
   const css = await page.evaluate(() => {
     const root = getComputedStyle(document.documentElement);
     return {
-      tokens: ['--brass-hi', '--brass-mid', '--brass-lo', '--brass-deep', '--polished-brass'].map((n) => root.getPropertyValue(n).trim()),
-      stack: root.getPropertyValue('--brass-stack'),
+      tokens: ['--metal-hi', '--metal-mid', '--metal-lo', '--metal-deep', '--polished-metal'].map((n) => root.getPropertyValue(n).trim()),
+      stack: root.getPropertyValue('--metal-stack'),
       light: getComputedStyle(document.body).backgroundImage,
     };
   });
   for (const t of css.tokens) expect(t).not.toBe('');
   expect(css.tokens[4]).toMatch(/^linear-gradient\(/);
-  expect(css.stack, 'brass stack ends with the polished gradient').toContain(css.tokens[4]);
+  expect(css.stack, 'metal stack ends with the polished gradient').toContain(css.tokens[4]);
   expect(css.light).toMatch(/radial-gradient\(.*rgb\(75, 87, 60\)/);
 });
 

@@ -124,6 +124,13 @@ test('the strip width follows --strip-rest-w, a share of the slot width that mat
   assert.match(rule[1], /width:\s*calc\(var\(--slot-w\)\s*\*\s*var\(--strip-rest-w\)\)/, '.strip must read --strip-rest-w');
 });
 
+test('the top wall shadow sits at the clip top: --strip-drop matches geometry.mjs', () => {
+  const css = readFileSync(join(siteDir, 'styles.css'), 'utf8');
+  const m = css.match(/--strip-drop:\s*([\d.]+)\s*;/);
+  assert.ok(m, 'missing a unitless --strip-drop');
+  assert.ok(Math.abs(Number(m[1]) - (STRIP_REST.bottomPx - PANEL.top) / TRAY.W) <= 0.0001, `--strip-drop is ${m[1]}`);
+});
+
 test('the feed start in app.js uses the same geometry as geometry.mjs', () => {
   const js = readFileSync(join(siteDir, 'app.js'), 'utf8');
   const m = js.match(/\*\s*\(\s*([\d.]+)\s*-\s*([\d.]+)\s*\)\s*\)\s*\/\s*([\d.]+)/);
