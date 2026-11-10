@@ -80,8 +80,24 @@
   --feed-ms: 3000ms;
   --reduced-fade-ms: 600ms;
 
-  /* Strip geometry: width follows the viewport, then the strip's 440:1600 ratio gives its height. */
-  --strip-w: clamp(4.5rem, calc((100svh - 23rem) / 3.636), min(30vw, 7.5rem));
+  /* Tray size: the slot's width follows the viewport height (176:403 box), within a floor and a cap. */
+  --slot-w: clamp(9.5rem, calc((100svh - var(--chrome)) * 176 / 403), min(15rem, 64vw));
+  /* Everything in the booth except the slot: padding, gaps, plate, details and the note row. */
+  --chrome: 27.7rem;
+
+  /* Tray geometry as fractions of the slot box, mirrored from scripts/tray/geometry.mjs (a unit test keeps them in sync). */
+  --panel-l: 15.909%; /* geometry.mjs */
+  --panel-r: 15.909%; /* from the right */
+  --panel-t: 5.459%;
+  --panel-b: 9.429%; /* from the bottom */
+  --clip-l: 6.818%;
+  --clip-r: 6.818%;
+  --clip-t: 5.459%;
+  --clip-b: 2.978%;
+  /* Strip at rest: width as a share of the slot width, bottom edge as a share of the clip box's height. */
+  --strip-rest-w: 47.727%;
+  --strip-rest-bottom: 3.171%;
+  --strip-rest-rot: -2.2deg;
 
   /* Fine horizontal brush streaks. */
   --brush-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.9' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.1 0 0 0 0 0.02 0 0 0 0.55 -0.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -138,21 +154,21 @@ body {
   padding:
     max(1.5rem, env(safe-area-inset-top))
     max(1.25rem, env(safe-area-inset-right))
-    max(1.25rem, env(safe-area-inset-bottom))
+    max(1.5rem, env(safe-area-inset-bottom))
     max(1.25rem, env(safe-area-inset-left));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto auto 1fr;
+  grid-template-rows: 1fr auto auto auto 1fr;
   justify-items: center;
-  align-content: start;
+  align-content: stretch;
   row-gap: 1.25rem;
 }
 
 /* The plate and the names share one cell so they can crossfade; the button and details share another. */
-.plate, .names { grid-area: 1 / 1; }
-.slot { grid-area: 2 / 1; }
-.print-btn, .details { grid-area: 3 / 1; }
-.note { grid-area: 4 / 1; align-self: end; }
+.plate, .names { grid-area: 2 / 1; }
+.slot { grid-area: 3 / 1; }
+.print-btn, .details { grid-area: 4 / 1; }
+.note { grid-area: 5 / 1; align-self: end; }
 
 /* ---------- Visibility by state ---------- */
 
@@ -332,7 +348,7 @@ html.no-js .etched {
 .names {
   margin: 0;
   max-width: 100%;
-  align-self: center;
+  align-self: start;
   text-align: center;
   font-family: "Pinyon Script", cursive;
   font-weight: 400;
@@ -348,62 +364,69 @@ html.no-js .etched {
   .names { padding-inline: 0.75rem; }
 }
 
-/* ---------- Recessed slot ---------- */
+/* ---------- Tray (the rendered image is the slot; CSS only adds layers over it) ---------- */
 
 .slot {
   position: relative;
-  width: calc(var(--strip-w) + 2 * 0.875rem + 2 * 0.5rem);
-  /* The border carries the brass frame; the padding box is the well and clips the strip. */
-  border: 0.5rem solid transparent;
-  border-radius: 8px;
-  padding: 0.625rem 0.875rem;
-  overflow: hidden;
-  background: var(--brass-stack);
-  background-origin: border-box;
-  background-clip: border-box;
-  display: grid;
-  justify-items: center;
-  align-items: start;
+  width: var(--slot-w);
+  aspect-ratio: 176 / 403;
+  border-radius: calc(var(--slot-w) * 7 / 176);
+  /* The dark bronze under the image is the failure fallback; the inset brass line then stands in for the rim. */
+  background: url("assets/tray.webp") center / 100% 100% no-repeat, #2a2318;
+  box-shadow:
+    inset 0 0 0 2px var(--brass),
+    0 4px 2px rgba(0, 0, 0, 0.3),
+    0 18px 26px -6px rgba(8, 10, 5, 0.65);
   cursor: pointer;
-  box-shadow:
-    0 0 0 1px rgba(255, 244, 205, 0.35),
-    0 6px 14px rgba(15, 20, 8, 0.5);
-}
-.slot::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 2px;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 40%),
-    linear-gradient(90deg, #1d2114, #2b3120 30%, #2b3120 70%, #1d2114);
-  box-shadow:
-    inset 0 10px 14px rgba(0, 0, 0, 0.65),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
-    inset 0 -2px 0 rgba(255, 255, 255, 0.06);
 }
 
+/* "Save the Date" is etched into the back panel. */
 .etched {
   position: absolute;
-  inset: 0;
+  inset: var(--panel-t) var(--panel-r) var(--panel-b) var(--panel-l);
   display: grid;
   place-items: center;
-  padding: 0 0.5rem;
   text-align: center;
   font-family: "Pinyon Script", cursive;
-  font-size: 2rem;
+  font-size: calc(var(--slot-w) * 0.19);
   line-height: 1.05;
   text-wrap: balance;
-  color: rgba(255, 238, 190, 0.6);
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 238, 190, 0.18);
+  color: #c9ac6a;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6), 0 -1px 0 rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
 
-.strip {
-  position: relative;
+/* The strip is clipped to the opening, from the back panel's top edge down to the ledge, so it emerges from under the top wall. */
+.tray-clip {
+  position: absolute;
+  inset: var(--clip-t) var(--clip-r) var(--clip-b) var(--clip-l);
+  overflow: hidden;
+  overflow: clip;
   z-index: 1;
+  pointer-events: none;
+}
+
+/* The shadow the top wall casts on the back panel, drawn over the strip. */
+.tray-shade {
+  position: absolute;
+  inset: var(--panel-t) var(--panel-r) var(--panel-b) var(--panel-l);
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.72),
+      rgba(0, 0, 0, 0.38) calc(var(--slot-w) * 14 / 176),
+      rgba(0, 0, 0, 0.12) calc(var(--slot-w) * 34 / 176),
+      transparent calc(var(--slot-w) * 56 / 176)),
+    linear-gradient(to right, rgba(0, 0, 0, 0.25), transparent calc(var(--slot-w) * 14 / 176)),
+    linear-gradient(to left, rgba(0, 0, 0, 0.18), transparent calc(var(--slot-w) * 14 / 176));
+}
+.strip {
+  position: absolute;
+  left: 50%;
+  bottom: var(--strip-rest-bottom);
   display: block;
-  width: var(--strip-w);
+  width: calc(var(--slot-w) * 84 / 176);
   margin: 0;
   padding: 0;
   border: 0;
@@ -411,9 +434,11 @@ html.no-js .etched {
   color: inherit;
   font: inherit;
   cursor: default;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
+  transform: translateX(-50%) rotate(var(--strip-rest-rot));
+  transform-origin: 50% 50%;
+  box-shadow: 0 5px 6px -1px rgba(0, 0, 0, 0.55), 0 14px 16px -6px rgba(0, 0, 0, 0.45);
 }
-.strip:enabled { cursor: zoom-in; }
+.strip:enabled { cursor: zoom-in; pointer-events: auto; }
 /* While it is still disabled (feeding), taps fall through to the slot, which ignores them. */
 .strip:disabled { pointer-events: none; }
 
@@ -430,8 +455,7 @@ html.no-js .etched {
 
 .print-btn {
   position: relative;
-  align-self: start;
-  margin-top: 0.75rem;
+  align-self: end;
   width: 4rem;
   height: 4rem;
   padding: 0;
@@ -609,6 +633,23 @@ html.no-js .etched {
 @keyframes zoom-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes zoom-in-scale { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
 
+/* Short phones: the plate, padding and gaps shrink first so the tray stays large (spec-booth-v2 4.2). */
+@media (max-height: 720px) {
+  :root { --chrome: 19.6rem; }
+  .booth {
+    padding-top: max(0.875rem, env(safe-area-inset-top));
+    padding-bottom: max(0.875rem, env(safe-area-inset-bottom));
+    row-gap: 0.375rem;
+  }
+  .plate { min-height: 0; padding-block: 0.625rem; }
+  .note { padding-top: 0.5rem; }
+}
+
+/* Where the booth is at its 440px maximum the names wrap onto two lines, which makes the names row taller. */
+@media (min-width: 441px) {
+  :root { --chrome: 29.6rem; }
+}
+
 /* ---------- Motion ---------- */
 
 @media (prefers-reduced-motion: no-preference) {
@@ -622,7 +663,8 @@ html.no-js .etched {
   .names, .date, .cal-primary, .cal-secondary, .note { transform: translateY(10px); }
 }
 
-/* Reduced motion: no transforms at all, a static halo ring, and opacity-only transitions. */
+/* Reduced motion: nothing animates its transform and the halo is a static ring; transitions are opacity-only.
+   The strip keeps its static rest tilt. */
 @media (prefers-reduced-motion: reduce) {
   /* The strip fades in already in place, starting when the feed would start. */
   .strip { transition: opacity var(--reduced-fade-ms) linear, visibility 0s linear; }

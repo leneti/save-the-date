@@ -4,6 +4,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import sharp from 'sharp';
 import { SITE_URL, googleCalendarUrl } from '../../site/calendar.js';
+import { TRAY, PANEL, OPENING, STRIP_REST, pct } from '../../scripts/tray/geometry.mjs';
 
 const siteDir = new URL('../../site/', import.meta.url).pathname;
 const html = readFileSync(join(siteDir, 'index.html'), 'utf8');
@@ -84,4 +85,32 @@ test('preloaded fonts exist, and josefin 600 latin-ext (the plate "ą") is prelo
   const hrefs = [...html.matchAll(/<link rel="preload" as="font"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
   assert.ok(hrefs.includes('assets/fonts/josefin-sans-600-latin-ext.woff2'), hrefs.join(', '));
   for (const h of hrefs) assert.ok(statSync(join(siteDir, h)).size > 0, h);
+});
+
+test('slot geometry in styles.css matches geometry.mjs', () => {
+  const css = readFileSync(join(siteDir, 'styles.css'), 'utf8');
+  const token = (name) => {
+    const m = css.match(new RegExp(`${name}:\\s*(-?[\\d.]+)(%|deg)`));
+    assert.ok(m, `missing ${name}`);
+    return { value: Number(m[1]), unit: m[2] };
+  };
+  const expected = {
+    '--panel-l': pct(PANEL.left, TRAY.W),
+    '--panel-r': pct(TRAY.W - PANEL.right, TRAY.W),
+    '--panel-t': pct(PANEL.top, TRAY.H),
+    '--panel-b': pct(TRAY.H - PANEL.bottom, TRAY.H),
+    '--clip-l': pct(OPENING.left, TRAY.W),
+    '--clip-r': pct(TRAY.W - OPENING.right, TRAY.W),
+    '--clip-t': pct(PANEL.top, TRAY.H),
+    '--clip-b': pct(TRAY.H - OPENING.bottom, TRAY.H),
+    '--strip-rest-w': pct(STRIP_REST.widthPx, TRAY.W),
+    '--strip-rest-bottom': pct((OPENING.bottom - STRIP_REST.bottomPx) / (OPENING.bottom - PANEL.top), 1),
+  };
+  for (const [name, want] of Object.entries(expected)) {
+    const { value, unit } = token(name);
+    assert.equal(unit, '%', name);
+    assert.ok(Math.abs(value - want) <= 0.01, `${name}: css ${value}, geometry ${want}`);
+  }
+  const rot = token('--strip-rest-rot');
+  assert.equal(`${rot.value}${rot.unit}`, `${STRIP_REST.rotateDeg}deg`);
 });
