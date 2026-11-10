@@ -103,7 +103,6 @@ test('slot geometry in styles.css matches geometry.mjs', () => {
     '--clip-r': pct(TRAY.W - OPENING.right, TRAY.W),
     '--clip-t': pct(PANEL.top, TRAY.H),
     '--clip-b': pct(TRAY.H - OPENING.bottom, TRAY.H),
-    '--strip-rest-w': pct(STRIP_REST.widthPx, TRAY.W),
     '--strip-rest-bottom': pct((OPENING.bottom - STRIP_REST.bottomPx) / (OPENING.bottom - PANEL.top), 1),
   };
   for (const [name, want] of Object.entries(expected)) {
@@ -113,4 +112,23 @@ test('slot geometry in styles.css matches geometry.mjs', () => {
   }
   const rot = token('--strip-rest-rot');
   assert.equal(`${rot.value}${rot.unit}`, `${STRIP_REST.rotateDeg}deg`);
+});
+
+test('the strip width follows --strip-rest-w, a share of the slot width that matches geometry.mjs', () => {
+  const css = readFileSync(join(siteDir, 'styles.css'), 'utf8');
+  const m = css.match(/--strip-rest-w:\s*(-?[\d.]+)\s*;/);
+  assert.ok(m, 'missing a unitless --strip-rest-w');
+  assert.ok(Math.abs(Number(m[1]) - STRIP_REST.widthPx / TRAY.W) <= 0.0001, `--strip-rest-w is ${m[1]}`);
+  const rule = css.match(/\n\.strip\s*\{([^}]*)\}/);
+  assert.ok(rule, 'missing the .strip rule');
+  assert.match(rule[1], /width:\s*calc\(var\(--slot-w\)\s*\*\s*var\(--strip-rest-w\)\)/, '.strip must read --strip-rest-w');
+});
+
+test('the feed start in app.js uses the same geometry as geometry.mjs', () => {
+  const js = readFileSync(join(siteDir, 'app.js'), 'utf8');
+  const m = js.match(/\*\s*\(\s*([\d.]+)\s*-\s*([\d.]+)\s*\)\s*\)\s*\/\s*([\d.]+)/);
+  assert.ok(m, 'could not find the startY literals in feedAnimation');
+  assert.equal(Number(m[1]), STRIP_REST.bottomPx, 'rest bottom edge');
+  assert.equal(Number(m[2]), PANEL.top, 'panel top');
+  assert.equal(Number(m[3]), TRAY.H, 'tray height');
 });

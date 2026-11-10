@@ -91,8 +91,8 @@
   --clip-r: 6.818%;
   --clip-t: 5.459%;
   --clip-b: 2.978%;
-  /* Strip at rest: width as a share of the slot width, bottom edge as a share of the clip box's height. */
-  --strip-rest-w: 47.727%;
+  /* Strip at rest: width as a fraction of the slot width (unitless, used as calc(var(--slot-w) * x)), bottom edge as a share of the clip box's height. */
+  --strip-rest-w: 0.47727;
   --strip-rest-bottom: 3.171%;
   --strip-rest-rot: -2.2deg;
 
@@ -120,7 +120,8 @@
 
 html {
   color-scheme: dark;
-  background: var(--olive);
+  /* The body's gradient ends in --olive-deep at its edges, so overscroll shows the same tone. */
+  background: var(--olive-deep);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -298,7 +299,8 @@ html.no-js .etched {
   cursor: pointer;
 }
 
-/* Four domed screws with a slot: two pseudo-elements, each carrying a left and a right head. */
+/* Four domed screws with a slot: two pseudo-elements, each carrying a left and a right head. Each head is a 10px
+   round dome (transparent outside the circle) with a small highlight and a slot line. */
 .plate::before,
 .plate::after {
   content: "";
@@ -310,8 +312,10 @@ html.no-js .etched {
   background:
     linear-gradient(rgba(40, 28, 8, 0.6), rgba(40, 28, 8, 0.6)) left 2px center / 6px 1.5px no-repeat,
     linear-gradient(rgba(40, 28, 8, 0.6), rgba(40, 28, 8, 0.6)) right 2px center / 6px 1.5px no-repeat,
-    radial-gradient(circle at 35% 30%, #fff1cf 0%, var(--brass-mid) 45%, var(--brass-deep) 100%) left / 10px 10px no-repeat,
-    radial-gradient(circle at 35% 30%, #fff1cf 0%, var(--brass-mid) 45%, var(--brass-deep) 100%) right / 10px 10px no-repeat;
+    radial-gradient(circle at 36% 30%, rgba(255, 241, 207, 0.95) 0, rgba(255, 241, 207, 0) 3px) left / 10px 10px no-repeat,
+    radial-gradient(circle at 36% 30%, rgba(255, 241, 207, 0.95) 0, rgba(255, 241, 207, 0) 3px) right / 10px 10px no-repeat,
+    radial-gradient(circle closest-side, var(--brass-mid) 0, var(--brass-lo) 55%, var(--brass-deep) calc(100% - 0.75px), transparent 100%) left / 10px 10px no-repeat,
+    radial-gradient(circle closest-side, var(--brass-mid) 0, var(--brass-lo) 55%, var(--brass-deep) calc(100% - 0.75px), transparent 100%) right / 10px 10px no-repeat;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
 }
 .plate::before { top: 7px; }
@@ -378,10 +382,12 @@ html.no-js .etched {
   width: var(--slot-w);
   aspect-ratio: 176 / 403;
   border-radius: calc(var(--slot-w) * 7 / 176);
-  /* The dark bronze under the image is the failure fallback; the inset brass line then stands in for the rim. */
-  background: url("assets/tray.webp") center / 100% 100% no-repeat, #2a2318;
+  /* Under the image sit the failure fallback layers: dark bronze inside a 2px brass edge. The image covers both, so the render's own bevel shows. */
+  background:
+    url("assets/tray.webp") center / 100% 100% no-repeat,
+    linear-gradient(#2a2318, #2a2318) center / calc(100% - 4px) calc(100% - 4px) no-repeat,
+    var(--brass-mid);
   box-shadow:
-    inset 0 0 0 2px var(--brass-mid),
     0 4px 2px rgba(0, 0, 0, 0.3),
     0 18px 26px -6px rgba(8, 10, 5, 0.65);
   cursor: pointer;
@@ -433,7 +439,7 @@ html.no-js .etched {
   left: 50%;
   bottom: var(--strip-rest-bottom);
   display: block;
-  width: calc(var(--slot-w) * 84 / 176);
+  width: calc(var(--slot-w) * var(--strip-rest-w));
   margin: 0;
   padding: 0;
   border: 0;
@@ -667,7 +673,23 @@ html.no-js .etched {
     row-gap: 0.375rem;
   }
   .plate { min-height: 0; padding-block: 0.625rem; }
+  /* The plate is too short for two rows of screws: one head per side, centred. */
+  .plate::before { top: 50%; transform: translateY(-50%); }
+  .plate::after { display: none; }
   .note { padding-top: 0.5rem; }
+}
+
+/* On a viewport too short for the content, the page scrolls and bottom-aligning the button (to centre the idle
+   booth) would push it below the fold. There it goes to the top of its row instead; the row heights are
+   unchanged, so the slot does not move. The heights sit just under the content's own minimum height, which
+   depends on how the names wrap: up to 340px wide it is 678-683px, 341-459px wide 639-654px, 460px and wider
+   715-718px. At 460px and wider the non-compact layout (above 720px tall) is 790-818px, so the button also
+   moves for 721-742px, where its bottom-aligned socket would end below the fold. */
+@media (max-width: 340px) and (max-height: 676px),
+       (min-width: 341px) and (max-width: 459px) and (max-height: 638px),
+       (min-width: 460px) and (max-height: 712px),
+       (min-width: 460px) and (min-height: 721px) and (max-height: 742px) {
+  .print-btn { align-self: start; margin-top: 7px; }
 }
 
 /* Where the booth is at its 440px maximum the names wrap onto two lines, which makes the names row taller. */

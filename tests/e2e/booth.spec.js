@@ -76,7 +76,8 @@ async function expectIdleCentred(page) {
   const plate = await rectOf(page, '.plate');
   const btn = await rectOf(page, '.print-btn');
   const socketBottom = btn.y + btn.height + (await socketOverhang(page));
-  test.skip(socketBottom > vh, 'idle content is taller than the viewport');
+  const overflows = await page.evaluate(() => document.documentElement.scrollHeight > document.documentElement.clientHeight);
+  test.skip(overflows, 'idle content is taller than the viewport');
   const top = plate.y;
   const bottom = vh - socketBottom;
   expect(Math.abs(top - bottom), `top gap ${top}, bottom gap ${bottom}`).toBeLessThanOrEqual(TOLERANCE);
@@ -128,13 +129,29 @@ test('the brass tokens and the overhead light are in place', async ({ page }) =>
   expect(css.light).toMatch(/radial-gradient\(.*rgb\(75, 87, 60\)/);
 });
 
-test('idle fits the viewport on iphone and pixel', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === 'small', 'the small project may scroll');
+// The socket's outer bottom (button bottom + overhang) must be on screen in idle: a short viewport that
+// cannot fit the content still has to show the whole print button.
+async function expectButtonOnScreen(page) {
   await page.goto('/');
   await expect(page.locator('.print-btn')).toBeVisible();
   const btn = await rectOf(page, '.print-btn');
-  expect(btn.y + btn.height).toBeLessThanOrEqual(page.viewportSize().height);
+  const socketBottom = btn.y + btn.height + (await socketOverhang(page));
+  expect(socketBottom, 'socket bottom vs viewport height').toBeLessThanOrEqual(page.viewportSize().height);
+}
+
+test('idle fits the viewport on every project', async ({ page }) => {
+  await expectButtonOnScreen(page);
 });
+
+for (const [width, height] of [[375, 553], [360, 560], [320, 568], [1366, 650]]) {
+  test.describe(`short ${width}x${height}`, () => {
+    test.use({ viewport: { width, height } });
+
+    test('the whole print button is on screen in idle', async ({ page }) => {
+      await expectButtonOnScreen(page);
+    });
+  });
+}
 
 test('the slot does not move between idle and printed', async ({ page }) => {
   await page.goto('/');
@@ -156,13 +173,15 @@ test('decorative layers are marked aria-hidden', async ({ page }) => {
 test('tray image failure falls back and still prints', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e));
-  await page.route('**/assets/tray.webp', (r) => r.abort());
+  let aborted = 0;
+  await page.route('**/assets/tray.webp', (r) => { aborted++; return r.abort(); });
   await page.goto('/');
   await page.locator('.print-btn').click();
   await expect(page.locator('.booth')).toHaveAttribute('data-state', 'printed', { timeout: 10_000 });
   const bg = await page.locator('.slot').evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(bg).not.toBe('rgba(0, 0, 0, 0)');
   expect(bg).not.toBe('transparent');
+  expect(aborted, 'the abort route was hit').toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
 
