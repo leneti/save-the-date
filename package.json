@@ -8,7 +8,6 @@
     "serve": "node scripts/serve.mjs",
     "fonts": "node scripts/copy-fonts.mjs",
     "strip": "node scripts/prepare-strip.mjs",
-    "og": "node scripts/render-og.mjs",
     "tray": "node scripts/render-tray.mjs"
   },
   "devDependencies": {

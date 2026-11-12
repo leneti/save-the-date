@@ -22,33 +22,15 @@ function walk(dir) {
     e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]);
 }
 
-test('og tags are complete and use SITE_URL', () => {
-  assert.equal(meta('property', 'og:title'), 'Save the Date · Emilija & Dominykas');
-  assert.equal(meta('property', 'og:description'), '2027.08.20');
-  assert.equal(meta('property', 'og:type'), 'website');
-  assert.equal(meta('property', 'og:locale'), 'lt_LT');
-  assert.equal(meta('property', 'og:url'), SITE_URL + '/');
-  assert.equal(meta('property', 'og:image'), SITE_URL + '/assets/og-image.jpg');
-  assert.equal(meta('property', 'og:image:width'), '1200');
-  assert.equal(meta('property', 'og:image:height'), '630');
-  assert.equal(meta('name', 'twitter:card'), 'summary_large_image');
+test('there is no link-preview metadata', () => {
+  assert.doesNotMatch(html, /property="og:|name="twitter:/);
 });
 
 test('every absolute URL in index.html is on SITE_URL', () => {
   const urls = html.match(/https?:\/\/[^\s"'<>]*/g) ?? [];
-  assert.ok(urls.length > 0);
   for (const u of urls) {
     assert.ok(u.startsWith(SITE_URL), `unexpected URL: ${u}`);
   }
-});
-
-test('og-image.jpg is 1200×630 JPEG ≤ 300KB', async () => {
-  const file = join(siteDir, 'assets/og-image.jpg');
-  const { format, width, height } = await sharp(file).metadata();
-  assert.equal(format, 'jpeg');
-  assert.equal(width, 1200);
-  assert.equal(height, 630);
-  assert.ok(statSync(file).size <= 300 * 1024);
 });
 
 test('site/ stays under 1,000,000 bytes', () => {
