@@ -1,4 +1,4 @@
-import { calendarLinks } from './calendar.js';
+import { feedKeyframes, feedSchedule } from './feed.js';
 import { createSound, vibrate } from './sound.js';
 
 // All durations in ms. The CSS custom properties below are derived from these, so one object tunes everything.
@@ -11,9 +11,13 @@ export const TIMINGS = {
   flashHold: 80,
   flashFade: 400,
   feedAt: 3100,
-  jerkMove: 450,
-  jerkPause: 300,
-  bounce: 200,
+  // The feed (feed.js): eight pushes, two per photo, then the strip hangs for a moment, falls and settles.
+  pushes: 8,
+  pushMove: 140,
+  pushPause: 70,
+  hang: 90,
+  fall: 300,
+  settle: 260,
   revealStagger: 200,
   revealFade: 400,
   reducedStripFade: 600,
@@ -38,12 +42,16 @@ export const hooks = {
   onTick() { sound.play('tick'); },
   onFlash() { sound.play('shutter'); },
   onFeedStart() { stopWhirr = sound.play('whirr', { loop: true }); },
-  onJerk() { vibrate(40); },
-  onLand() {
+  onJerk() { vibrate(25); }, // each push
+  onMotorStop() {
     stopWhirr();
     stopWhirr = () => {};
+  },
+  onLand() {
+    stopWhirr(); // already stopped, unless the motor hook failed
+    stopWhirr = () => {};
     sound.play('clunk');
-    vibrate(30);
+    vibrate(40);
   },
 };
 
@@ -51,7 +59,7 @@ export const hooks = {
 if (typeof requestIdleCallback === 'function') requestIdleCallback(() => sound.preload());
 else setTimeout(() => sound.preload(), 200);
 
-const JERKS = 4;
+const FEED = feedSchedule(TIMINGS);
 const ANNOUNCEMENT = 'Emilija & Dominykas, 2027.08.20';
 
 function callHook(name, ...args) {
@@ -68,32 +76,17 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const booth = document.querySelector('.booth');
 const $ = (selector) => booth.querySelector(selector);
 
-function applyCalendarLinks() {
-  const links = calendarLinks(navigator.userAgent);
-  for (const [selector, link] of [['.cal-primary', links.primary], ['.cal-secondary', links.secondary]]) {
-    const a = $(selector);
-    a.href = link.href;
-    a.textContent = link.label;
-    if (link.external) {
-      a.target = '_blank';
-      a.rel = 'noopener';
-    } else {
-      a.removeAttribute('target');
-      a.removeAttribute('rel');
-    }
-  }
-}
-
 function applyTimingVars() {
   const s = booth.style;
   s.setProperty('--press-ms', `${TIMINGS.press}ms`);
   s.setProperty('--reveal-ms', `${TIMINGS.revealFade}ms`);
   s.setProperty('--reveal-stagger', `${TIMINGS.revealStagger}ms`);
-  s.setProperty('--feed-ms', `${JERKS * (TIMINGS.jerkMove + TIMINGS.jerkPause)}ms`);
+  s.setProperty('--feed-ms', `${FEED.motorStop}ms`);
   s.setProperty('--reduced-fade-ms', `${TIMINGS.reducedStripFade}ms`);
 }
 
-// Purely decorative WAAPI call. fill is 'none', so a cancelled or unsupported animation leaves the CSS state intact.
+// Purely decorative WAAPI call. fill is 'none' unless asked otherwise, so a cancelled or unsupported animation leaves
+// the CSS state intact.
 function animate(el, keyframes, options) {
   try {
     el.animate(keyframes, { fill: 'none', ...options });
@@ -117,31 +110,49 @@ function flashAnimation() {
   );
 }
 
-// The strip emerges from under the top wall (the clip hides it), jerks down in 4 steps with no rotation,
-// then eases into its resting tilt during the landing bounce. The top wall's shadow lives inside the strip and
-// moves the opposite way, so it stays put under the wall while the paper slides through it.
+// The strip emerges from under the top wall (the clip hides it) in short pushes with no rotation, then drops: it
+// turns as it falls, one corner meets the ledge and the tilt settles (feed.js). The top wall's shadow lives inside the
+// strip and gets the inverse motion, so it stays put under the wall while the paper slides and turns through it.
 function feedAnimation(strip) {
-  const { jerkMove, jerkPause, bounce } = TIMINGS;
-  const step = jerkMove + jerkPause;
-  const total = JERKS * step + bounce;
   const root = getComputedStyle(document.documentElement);
-  // Travel from the rest pose's bottom edge on the clip top (design y 22) to rest (design y 379.3), whatever the strip's height.
-  const startY = -($('.slot').getBoundingClientRect().height * (379.3 - 22)) / 403;
-  const restRot = parseFloat(root.getPropertyValue('--strip-rest-rot')) || -2.2;
-  const overshoot = 0.375 * parseFloat(root.fontSize);
-  const at = (i) => startY * (1 - i / JERKS);
-  const poses = []; // { y, deg, offset, easing }
-  for (let i = 0; i < JERKS; i++) {
-    poses.push({ y: at(i), deg: 0, offset: (i * step) / total, easing: 'cubic-bezier(.2, .8, .3, 1)' });
-    poses.push({ y: at(i + 1), deg: 0, offset: (i * step + jerkMove) / total, easing: 'linear' });
-  }
-  poses.push({ y: at(JERKS), deg: 0, offset: (JERKS * step) / total, easing: 'ease-out' });
-  poses.push({ y: overshoot, deg: restRot * 0.6, offset: (JERKS * step + bounce * 0.4) / total, easing: 'ease-in-out' });
-  poses.push({ y: 0, deg: restRot, offset: 1 });
-  const frames = (transform) => poses.map(({ offset, easing, ...pose }) => ({ transform: transform(pose), offset, ...(easing && { easing }) }));
-  animate(strip, frames(({ y, deg }) => `translateX(-50%) translateY(${y}px) rotate(${deg}deg)`), { duration: total });
+  const slotHeight = $('.slot').getBoundingClientRect().height;
+  const poses = feedKeyframes({
+    // From the rest pose's bottom edge on the clip top (design y 22) to rest (design y 379.3), whatever the strip's height.
+    travel: (slotHeight * (379.3 - 22)) / 403,
+    free: strip.offsetTop,
+    w: strip.offsetWidth,
+    h: strip.offsetHeight,
+    rest: parseFloat(root.getPropertyValue('--strip-rest-rot')) || -2.2,
+    unit: slotHeight / 403,
+  }, TIMINGS);
+  const frames = (transform) => poses.map(({ offset, easing, ...pose }) => ({ transform: transform(pose), offset, easing }));
+  // The last keyframe is the rest pose, and the animation holds it: at the moment an animation without a fill
+  // ends, WebKit can show its first keyframe for one frame (the strip would flash back to the top).
+  animate(strip, frames(({ y, deg }) => `translateX(-50%) translateY(${y}px) rotate(${deg}deg)`), { duration: FEED.total, fill: 'forwards' });
   const shade = strip.querySelector('.tray-shade');
-  if (shade) animate(shade, frames(({ y }) => `translateY(${-y}px)`), { duration: total });
+  if (shade) {
+    shade.style.transformOrigin = `50% ${strip.offsetHeight / 2 - shade.offsetTop}px`; // the strip's centre
+    animate(shade, frames(({ y, deg }) => `rotate(${-deg}deg) translateY(${-y}px)`), { duration: FEED.total });
+  }
+}
+
+// The layout follows --vh instead of the live viewport height. In-app browsers (Messenger on iOS) resize the page
+// frame by frame while their toolbar slides away, which made the whole booth grow and shrink during a scroll. On
+// touch screens the height is therefore only taken over when the width changes (rotation) or when it gets smaller;
+// with a mouse (a desktop window being resized) it always follows.
+function trackViewportHeight() {
+  const root = document.documentElement;
+  const touch = window.matchMedia('(pointer: coarse)').matches;
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+  const apply = () => root.style.setProperty('--vh', `${height}px`);
+  apply();
+  window.addEventListener('resize', () => {
+    if (touch && window.innerWidth === width && window.innerHeight >= height) return;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    apply();
+  });
 }
 
 let running = false;
@@ -152,7 +163,7 @@ async function runSequence(reduced) {
   const until = (ms) => sleep(Math.max(0, t0 + ms - performance.now()));
   const strip = $('.strip');
   const count = $('.plate-count');
-  const { countStart, countStep, flashAt, feedAt, jerkMove, jerkPause, bounce } = TIMINGS;
+  const { countStart, countStep, flashAt, feedAt } = TIMINGS;
 
   booth.dataset.state = 'countdown';
 
@@ -174,23 +185,23 @@ async function runSequence(reduced) {
   if (!reduced) feedAnimation(strip);
   callHook('onFeedStart');
 
-  for (let i = 0; i < JERKS; i++) {
-    if (i > 0) await until(feedAt + i * (jerkMove + jerkPause));
-    callHook('onJerk', i);
+  const events = [
+    ...FEED.pushTimes.map((at, i) => ({ at, hook: 'onJerk', arg: i })),
+    { at: FEED.motorStop, hook: 'onMotorStop' },
+    { at: FEED.land, hook: 'onLand' },
+  ];
+  for (const event of events) {
+    if (event.at > 0) await until(feedAt + event.at);
+    callHook(event.hook, event.arg);
   }
 
-  const landAt = feedAt + JERKS * (jerkMove + jerkPause);
-  await until(landAt);
-  callHook('onLand');
-
-  await until(landAt + bounce);
+  await until(feedAt + FEED.total);
   finish();
 }
 
 // The printed tail, shared by the normal path and the catch-all fallback.
 function finish() {
   booth.dataset.state = 'printed';
-  $('.strip').disabled = false;
   $('#announce').textContent = ANNOUNCEMENT;
   // The print button is hidden now, so keyboard focus would fall to <body>. Hand it to the heading instead.
   const active = document.activeElement;
@@ -209,38 +220,6 @@ function start() {
   });
 }
 
-applyCalendarLinks();
 applyTimingVars();
+trackViewportHeight();
 for (const el of booth.querySelectorAll('.print-btn, [data-trigger]')) el.addEventListener('click', start);
-
-// ---------- Close-up ----------
-// The dialog's `open` attribute is the "zoomed" state; data-state stays `printed`.
-const zoom = document.querySelector('.zoom');
-let closing = false;
-
-function openZoom() {
-  if (zoom.open || booth.dataset.state !== 'printed') return;
-  if (typeof zoom.showModal !== 'function') return; // no <dialog> support: the strip is simply not zoomable
-  const img = $('.strip img');
-  if (img.complete && img.naturalWidth === 0) return; // the photo failed to load: nothing to show
-  closing = false;
-  zoom.showModal();
-  history.pushState({ zoom: true }, '');
-}
-
-// One user-close path for tap, button and Escape. The flag stops a fast second close from calling history.back() twice.
-function userClose() {
-  if (!zoom.open || closing) return;
-  closing = true;
-  if (history.state?.zoom) history.back(); // popstate closes the dialog
-  else zoom.close();
-}
-
-$('.strip').addEventListener('click', openZoom);
-zoom.addEventListener('click', userClose); // the backdrop, the image and the button all land here
-zoom.addEventListener('cancel', (e) => {
-  e.preventDefault(); // Escape: take over, so the native close and ours never both run
-  userClose();
-});
-zoom.addEventListener('close', () => { closing = false; });
-window.addEventListener('popstate', () => { if (zoom.open) zoom.close(); });

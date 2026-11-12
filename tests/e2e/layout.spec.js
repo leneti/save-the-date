@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { googleCalendarUrl } from '../../site/calendar.js';
 
 const noOverflow = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
@@ -9,6 +8,7 @@ test('idle shows plate, slot and print button only', async ({ page }) => {
   await expect(page.locator('.plate')).toBeVisible();
   await expect(page.locator('.plate-text')).toHaveText('Paspausk mygtuką!');
   await expect(page.locator('.slot .etched')).toBeVisible();
+  await expect(page.locator('.slot .etched span')).toHaveText(['Save', 'the', 'Date']);
   await expect(page.locator('.print-btn')).toBeVisible();
   await expect(page.locator('.names')).toBeHidden();
   await expect(page.locator('.details')).toBeHidden();
@@ -50,7 +50,7 @@ async function assertFontsLoadFromSameOrigin(page, baseURL, families) {
 }
 
 test('fonts load from same origin only (idle)', async ({ page, baseURL }) => {
-  await assertFontsLoadFromSameOrigin(page, baseURL, ['Pinyon Script', 'Josefin Sans']);
+  await assertFontsLoadFromSameOrigin(page, baseURL, ['Luxurious Script', 'Josefin Sans']);
 });
 
 test.describe('no JavaScript', () => {
@@ -59,19 +59,19 @@ test.describe('no JavaScript', () => {
   test('renders the printed state statically', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.names')).toBeVisible();
-    await expect(page.locator('.names')).toHaveText('Emilija & Dominykas');
+    await expect(page.locator('.names')).toHaveText('Švęsti meilę, švęsti mus! Emilija & Dominykas');
+    await expect(page.locator('.names .lead')).toBeVisible();
+    await expect(page.locator('.details .kicker')).toBeVisible();
+    await expect(page.locator('.details .kicker')).toHaveText('Save the Date');
+    await expect(page.locator('.note')).toHaveText('Detalų kvietimą atsiųsime vėliau');
     await expect(page.locator('.strip img')).toBeVisible();
     await expect(page.locator('.date')).toHaveText('2027.08.20');
-    await expect(page.locator('.cal-primary')).toBeVisible();
-    await expect(page.locator('.cal-primary')).toHaveAttribute('href', '/save-the-date.ics');
-    await expect(page.locator('.cal-secondary')).toBeVisible();
-    await expect(page.locator('.cal-secondary')).toHaveAttribute('href', googleCalendarUrl());
     await expect(page.locator('.note')).toBeVisible();
     await expect(page.locator('.print-btn')).toBeHidden();
   });
 
   test('fonts load from same origin only (printed)', async ({ page, baseURL }) => {
-    await assertFontsLoadFromSameOrigin(page, baseURL, ['Pinyon Script', 'Cormorant Garamond', 'Josefin Sans']);
+    await assertFontsLoadFromSameOrigin(page, baseURL, ['Luxurious Script', 'Cormorant Garamond', 'Josefin Sans']);
   });
 
   test('no horizontal overflow in printed state', async ({ page }) => {
@@ -80,7 +80,7 @@ test.describe('no JavaScript', () => {
     expect(await noOverflow(page)).toBe(true);
   });
 
-  test('names fit on the smallest screen', async ({ page }, testInfo) => {
+  test('names fit on one line, also on the smallest screen', async ({ page }) => {
     await page.goto('/');
     const names = page.locator('.names');
     await expect(names).toBeVisible();
@@ -88,26 +88,22 @@ test.describe('no JavaScript', () => {
     const vp = page.viewportSize();
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(vp.width);
-    if (testInfo.project.name === 'small') {
-      const lineHeight = await names.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
-      expect(box.height).toBeGreaterThan(lineHeight * 1.5);
-    } else {
-      // wider phones: stays on one line
-      const lineHeight = await names.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
-      expect(box.height).toBeLessThan(lineHeight * 1.5);
-    }
+    // The heading holds the small line and then the names: take that line (and its margin) off.
+    const { lineHeight, lead } = await names.evaluate((el) => {
+      const k = el.querySelector('.lead');
+      return { lineHeight: parseFloat(getComputedStyle(el).lineHeight), lead: k.offsetHeight + parseFloat(getComputedStyle(k).marginBottom) };
+    });
+    expect(box.height - lead).toBeLessThan(lineHeight * 1.5);
   });
 });
 
-for (const module of ['app.js', 'calendar.js', 'sound.js']) {
+for (const module of ['app.js', 'feed.js', 'sound.js']) {
   test(`falls back to the static printed view when ${module} fails to load`, async ({ page }) => {
     await page.route(`**/${module}`, (route) => route.abort());
     await page.goto('/');
     await expect(page.locator('html')).toHaveClass('no-js');
     await expect(page.locator('.names')).toBeVisible();
     await expect(page.locator('.date')).toHaveText('2027.08.20');
-    await expect(page.locator('.cal-primary')).toBeVisible();
-    await expect(page.locator('.cal-primary')).toHaveAttribute('href', '/save-the-date.ics');
     await expect(page.locator('.note')).toBeVisible();
     await expect(page.locator('.print-btn')).toBeHidden();
   });

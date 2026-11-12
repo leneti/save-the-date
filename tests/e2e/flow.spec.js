@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { googleCalendarUrl } from '../../site/calendar.js';
 
 const printed = (page) =>
   expect(page.locator('.booth')).toHaveAttribute('data-state', 'printed', { timeout: 10_000 });
@@ -29,9 +28,10 @@ test('pressing the button prints and reveals everything', async ({ page }) => {
   await expect(count).toHaveText('2', { timeout: 1000 });
   await expect(count).toHaveText('1', { timeout: 1000 });
   await printed(page);
-  for (const sel of ['.names', '.strip img', '.date', '.cal-primary', '.cal-secondary', '.note']) {
+  for (const sel of ['.names', '.strip img', '.kicker', '.date', '.note']) {
     await expect(page.locator(sel)).toBeVisible();
   }
+  await expect(page.locator('.cal-primary')).toHaveCount(0);
   await expect(page.locator('.print-btn')).toBeHidden();
   await expect(page.locator('#announce')).toHaveText('Emilija & Dominykas, 2027.08.20');
   await expect(page.locator('.strip')).toBeEnabled();
@@ -63,27 +63,6 @@ test('double press does not restart', async ({ page }) => {
   expect(await page.evaluate(() => window.__states)).toEqual(['countdown', 'flash', 'printing', 'printed']);
 });
 
-test('calendar links match the device', async ({ page }, testInfo) => {
-  await page.goto('/');
-  const primary = page.locator('.cal-primary');
-  const secondary = page.locator('.cal-secondary');
-  if (testInfo.project.name === 'pixel') {
-    await expect(primary).toHaveAttribute('href', googleCalendarUrl());
-    await expect(primary).toHaveAttribute('target', '_blank');
-    await expect(primary).toHaveText('Pridėti į kalendorių');
-    await expect(secondary).toHaveText('Kitas kalendorius');
-    await expect(secondary).toHaveAttribute('href', '/save-the-date.ics');
-    await expect(secondary).not.toHaveAttribute('target');
-  } else {
-    await expect(primary).toHaveAttribute('href', '/save-the-date.ics');
-    await expect(primary).not.toHaveAttribute('target');
-    await expect(primary).toHaveText('Pridėti į kalendorių');
-    await expect(secondary).toHaveText('Google kalendorius');
-    await expect(secondary).toHaveAttribute('href', googleCalendarUrl());
-    await expect(secondary).toHaveAttribute('target', '_blank');
-  }
-});
-
 test('reduced motion reaches the same end state without flash', async ({ page }) => {
   await recordStates(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -102,7 +81,7 @@ test('reduced motion reaches the same end state without flash', async ({ page })
   expect(await page.evaluate(() => window.__states)).toEqual(['countdown', 'printing', 'printed']);
   expect(await page.evaluate(() => window.__flashMax)).toBe(0);
   await expect(page.locator('.strip img')).toBeVisible();
-  await expect(page.locator('.cal-primary')).toBeVisible();
+  await expect(page.locator('.date')).toBeVisible();
 });
 
 test('reduced motion fires every hook at the same times as normal motion', async ({ page }) => {
@@ -124,11 +103,13 @@ test('reduced motion fires every hook at the same times as normal motion', async
     await printed(page);
     return page.evaluate(() => window.__hooks);
   };
+  // Eight pushes 210 ms apart; the motor stops when the last one ends, and the strip lands 390 ms later.
   const expected = [
     ['onPress', null, 0], ['onTick', 3, 200], ['onTick', 2, 900], ['onTick', 1, 1600],
     ['onFlash', null, 2300], ['onFeedStart', null, 3100],
-    ['onJerk', 0, 3100], ['onJerk', 1, 3850], ['onJerk', 2, 4600], ['onJerk', 3, 5350],
-    ['onLand', null, 6100],
+    ...Array.from({ length: 8 }, (_, i) => ['onJerk', i, 3100 + i * 210]),
+    ['onMotorStop', null, 4710],
+    ['onLand', null, 5100],
   ];
   for (const mode of ['no-preference', 'reduce']) {
     const fired = await run(mode);

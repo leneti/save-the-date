@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import sharp from 'sharp';
-import { SITE_URL, googleCalendarUrl } from '../../site/calendar.js';
+const SITE_URL = 'https://emilija-dominykas.netlify.app';
 import { TRAY, PANEL, OPENING, STRIP_REST, pct } from '../../scripts/tray/geometry.mjs';
 
 const siteDir = new URL('../../site/', import.meta.url).pathname;
@@ -34,18 +34,12 @@ test('og tags are complete and use SITE_URL', () => {
   assert.equal(meta('name', 'twitter:card'), 'summary_large_image');
 });
 
-test('every absolute URL in index.html is SITE_URL or Google Calendar', () => {
+test('every absolute URL in index.html is on SITE_URL', () => {
   const urls = html.match(/https?:\/\/[^\s"'<>]*/g) ?? [];
   assert.ok(urls.length > 0);
   for (const u of urls) {
-    assert.ok(u.startsWith(SITE_URL) || u.startsWith('https://calendar.google.com/'), `unexpected URL: ${u}`);
+    assert.ok(u.startsWith(SITE_URL), `unexpected URL: ${u}`);
   }
-});
-
-test('static google link matches googleCalendarUrl()', () => {
-  const m = html.match(/class="cal-secondary"\s+href="([^"]*)"/);
-  assert.ok(m);
-  assert.equal(decode(m[1]), googleCalendarUrl());
 });
 
 test('og-image.jpg is 1200×630 JPEG ≤ 300KB', async () => {

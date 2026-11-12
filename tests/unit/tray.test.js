@@ -40,7 +40,8 @@ test('the tracer is deterministic, transparent outside the frame and champagne i
   assert.ok(a.data.equals(b.data), 'two renders differ');
   const px = (x, y) => [...a.data.subarray((y * a.width + x) * 4, (y * a.width + x) * 4 + 4)];
   assert.equal(px(0, 0)[3], 0, 'the rounded corner is transparent');
-  // Mean of the back panel's middle: opaque, light and warm (red over green over blue).
+  // Mean of the back panel's middle: opaque, a darker mid tone (the interior is darker than the frame) and warm
+  // (red over green over blue).
   let r = 0, g = 0, bl = 0, n = 0;
   for (let y = 180; y < 220; y++) for (let x = 60; x < 116; x++) {
     const [pr, pg, pb, pa] = px(x, y);
@@ -48,5 +49,5 @@ test('the tracer is deterministic, transparent outside the frame and champagne i
     r += pr; g += pg; bl += pb; n++;
   }
   [r, g, bl] = [r / n, g / n, bl / n];
-  assert.ok(r > 150 && r > g && g > bl, `back panel mean ${r.toFixed(0)}, ${g.toFixed(0)}, ${bl.toFixed(0)}`);
+  assert.ok(r > 110 && r < 175 && r > g && g > bl, `back panel mean ${r.toFixed(0)}, ${g.toFixed(0)}, ${bl.toFixed(0)}`);
 });

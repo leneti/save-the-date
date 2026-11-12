@@ -7,7 +7,7 @@ const out = join(root, 'site/assets/fonts');
 mkdirSync(out, { recursive: true });
 
 const faces = [
-  ['pinyon-script', [400]],
+  ['luxurious-script', [400]],
   ['cormorant-garamond', [500]],
   ['josefin-sans', [400, 600]],
 ];

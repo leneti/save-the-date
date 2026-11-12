@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { prepareStrip } from '../../scripts/prepare-strip.mjs';
 
-const faces = ['pinyon-script-400', 'cormorant-garamond-500', 'josefin-sans-400', 'josefin-sans-600'];
+const faces = ['luxurious-script-400', 'cormorant-garamond-500', 'josefin-sans-400', 'josefin-sans-600'];
 
 test('fonts cover latin and latin-ext for every face', () => {
   for (const face of faces) {
@@ -24,7 +24,7 @@ test('strip.webp is a portrait strip ≤200KB', async () => {
   assert.equal(m.format, 'webp');
   assert.equal(m.height, 1600);
   const ratio = m.height / m.width;
-  assert.ok(ratio >= 3.2 && ratio <= 4.0, `ratio ${ratio}`);
+  assert.ok(ratio >= 4.6 && ratio <= 5.4, `ratio ${ratio}`);
   assert.ok(statSync(p).size <= 200000);
 });
 

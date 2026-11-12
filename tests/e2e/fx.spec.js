@@ -60,7 +60,7 @@ test('plays the four sounds at the right moments', async ({ page }) => {
   expect(await page.evaluate(() => window.__resumed)).toBeGreaterThan(0);
   const played = await page.evaluate(() => window.__played);
   expect(played).toEqual(['tick', 'tick', 'tick', 'tick', 'shutter', 'whirr', 'clunk']);
-  // The whirr loop is stopped before the clunk.
+  // The whirr loop is stopped once, before the clunk.
   expect(await page.evaluate(() => window.__stopped)).toEqual(['whirr']);
 });
 
@@ -76,7 +76,8 @@ test('vibrates on Android only', async ({ page }, testInfo) => {
     await page.goto('/');
     await page.locator('.print-btn').click();
     await printed(page);
-    expect(await page.evaluate(() => window.__vib)).toEqual([15, 40, 40, 40, 40, 30]);
+    // The press, one short buzz per push, and the landing.
+    expect(await page.evaluate(() => window.__vib)).toEqual([15, ...Array(8).fill(25), 40]);
   } else {
     await page.addInitScript(() => {
       delete Navigator.prototype.vibrate;

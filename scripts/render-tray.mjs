@@ -30,7 +30,7 @@ export const CFG = {
   // ---- pocket: one pressed sheet, rf is the fold radius ----
   depth: 34, rf: 5,
   maxBounces: 7, maxRadiance: 14,
-  wallColor: srgbToLinear('#3f4a32').map((v) => v * 0.9), // the olive wall the frame sits on (--olive)
+  wallColor: srgbToLinear('#37412c').map((v) => v * 0.9), // the olive wall the frame sits on (--olive)
   // ---- studio: a warm room with a dark band at eye level, and four softboxes (pos is the centre, in the tray's
   //      own coordinates: x right, y down, z toward the viewer; each one faces the tray) ----
   dome: { ceil: [0.95, 0.84, 0.66], horizon: [0.035, 0.03, 0.024], floor: [0.11, 0.09, 0.065], front: [0, 0, 0], t: [-0.62, -0.4, 0.2, 0.42] },
@@ -42,8 +42,20 @@ export const CFG = {
   ],
   // ---- champagne: warm nickel silver. f0 is the metal's colour; at / ab are the roughness along and across the brushing ----
   frameMat: { f0: [0.90, 0.84, 0.72], at: 0.035, ab: 0.06, brush: 'run', streak: 0, streakLen: 0.02, f1: 1.4, f2: 4.2, wavy: 0.006, wavyF: 0.05 },
-  interiorMat: { f0: [0.78, 0.71, 0.58], at: 0.08, ab: 0.26, streak: 0.03, streakLen: 0.012, f1: 1.4, f2: 4.2, wavy: 0.008, wavyF: 0.035, foldRough: 0.12 },
+  // The interior is the same metal with a darker finish, so the light engraving and the paper stand out against it.
+  // back: the back panel's colour as a share of f0 (it is a little darker than the walls).
+  interiorMat: { f0: [0.38, 0.345, 0.28], back: 0.75, at: 0.08, ab: 0.26, streak: 0.03, streakLen: 0.012, f1: 1.4, f2: 4.2, wavy: 0.008, wavyF: 0.035, foldRough: 0.12 },
   tone: { exposure: 1.0 },
+  // Extra shadow under the top wall, on the interior only: `strength` at the opening's top edge, fading to nothing
+  // `reach` px further down. The strip gets the same shadow in CSS (.tray-shade).
+  topShade: { strength: 0.7, reach: 110 },
+};
+
+// A copy of the configuration with some values replaced (nested objects are merged, arrays replaced).
+export const withConfig = (base, over) => {
+  const out = { ...base };
+  for (const k in over) out[k] = over[k] && typeof over[k] === 'object' && !Array.isArray(over[k]) && base[k] ? withConfig(base[k], over[k]) : over[k];
+  return out;
 };
 
 // Removes sampling noise by averaging along the brushing direction only, stopping at folds and edges.
@@ -72,25 +84,31 @@ function denoise(lin, aux, width, height, radius) {
   return out;
 }
 
+const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const aces = (x) => { x = Math.max(0, x); return Math.min(1, (x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14)); };
 const oetf = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
 
 // Traces the tray and returns straight-alpha RGBA pixels (transparent outside the frame).
-export async function tracePixels({ scale = 3, spp = 144 } = {}) {
-  const width = CFG.W * scale, height = CFG.H * scale;
+export async function tracePixels({ scale = 3, spp = 144, cfg = CFG } = {}) {
+  const width = cfg.W * scale, height = cfg.H * scale;
   const shared = new SharedArrayBuffer(width * height * 4 * 4);
   const sharedAux = new SharedArrayBuffer(width * height * 8 * 4);
   const n = Math.max(1, os.cpus().length);
   const workerFile = join(root, 'scripts/tray/worker.mjs');
   await Promise.all(Array.from({ length: n }, (_, id) => new Promise((resolve, reject) => {
-    const w = new Worker(workerFile, { workerData: { cfg: CFG, scale, spp, id, n, shared, sharedAux } });
+    const w = new Worker(workerFile, { workerData: { cfg, scale, spp, id, n, shared, sharedAux } });
     w.on('message', (m) => { if (m.done) resolve(); });
     w.on('error', reject);
   })));
-  const lin = denoise(new Float32Array(shared), new Float32Array(sharedAux), width, height, Math.round(2.2 * scale));
+  const aux = new Float32Array(sharedAux);
+  const lin = denoise(new Float32Array(shared), aux, width, height, Math.round(2.2 * scale));
   const data = Buffer.alloc(width * height * 4);
+  const shade = cfg.topShade || { strength: 0, reach: 1 };
   for (let i = 0; i < width * height; i++) {
-    for (let c = 0; c < 3; c++) data[i * 4 + c] = Math.round(255 * oetf(aces(lin[i * 4 + c] * CFG.tone.exposure)));
+    // aux[6] is how much of the pixel is interior (0 on the frame).
+    const below = clamp01((Math.floor(i / width) / scale - cfg.opening.t) / shade.reach);
+    const gain = cfg.tone.exposure * (1 - shade.strength * aux[i * 8 + 6] * (1 - below) ** 2);
+    for (let c = 0; c < 3; c++) data[i * 4 + c] = Math.round(255 * oetf(aces(lin[i * 4 + c] * gain)));
     data[i * 4 + 3] = Math.round(255 * lin[i * 4 + 3]);
   }
   return { data, width, height };

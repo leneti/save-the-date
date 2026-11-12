@@ -1,17 +1,17 @@
 @font-face {
-  font-family: "Pinyon Script";
+  font-family: "Luxurious Script";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("assets/fonts/pinyon-script-400-latin-ext.woff2") format("woff2");
+  src: url("assets/fonts/luxurious-script-400-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 @font-face {
-  font-family: "Pinyon Script";
+  font-family: "Luxurious Script";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("assets/fonts/pinyon-script-400-latin.woff2") format("woff2");
+  src: url("assets/fonts/luxurious-script-400-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 @font-face {
@@ -64,8 +64,10 @@
 }
 
 :root {
-  --olive: #3f4a32;
-  --olive-deep: #313a26;
+  /* The wall behind the booth: its colour, its darker edges and the soft light in the middle. */
+  --olive: #37412c;
+  --olive-deep: #2a3220;
+  --olive-glow: #424d35;
   --cream: #efe7cf;
   --ink: #2e291c;
   --paper: #f6efdc;
@@ -74,13 +76,31 @@
   --press-ms: 120ms;
   --reveal-ms: 400ms;
   --reveal-stagger: 200ms;
-  --feed-ms: 3000ms;
+  --feed-ms: 1610ms;
   --reduced-fade-ms: 600ms;
 
+  /* --vh is the viewport's height. app.js sets it in px and, on touch screens, keeps it when only the height
+     grows: in-app browsers (Messenger on iOS) resize the page while their toolbar slides away, and the booth
+     must not grow and shrink with it. Without JavaScript it is 100svh. */
   /* Tray size: the slot's width follows the viewport height (176:403 box), within a floor and a cap. */
-  --slot-w: clamp(9.5rem, calc((100svh - var(--chrome)) * 176 / 403), min(15rem, 64vw));
-  /* Everything in the booth except the slot: padding, gaps, plate, details and the note row. */
-  --chrome: 27.7rem;
+  --slot-w: clamp(calc(10.215rem * var(--slot-k)), calc((var(--vh, 100svh) - var(--chrome)) * 176 / 403 * var(--slot-k)), calc(min(15rem, 64vw) * var(--slot-k)));
+  /* The tray takes this share of the room it could have; the rest goes to the margins above and below the booth. */
+  --slot-k: 1;
+  /* The gap between the booth's rows (heading, tray, details). */
+  --gap: 1.5rem;
+  --date-size: 2.9rem;
+  /* Everything in the booth except the slot: the row that the plate and the heading share, plus --chrome-rest
+     (padding, gaps, details, and the note row with its twin at the top). */
+  --chrome: calc(var(--chrome-rest) + max(var(--plate-h), var(--names-h)));
+  --chrome-rest: calc(var(--chrome-base) + 4 * var(--gap));
+  --chrome-base: 12.565rem;
+  --plate-h: 4.5rem;
+  /* The heading: the small line above the names (0.6875rem x 1.4, plus a 0.45rem gap) and one line of names.
+     Luxurious Script is small on its body: this size and a line height of 0.923 give letters as tall as, and lines
+     as far apart as, an ordinary script at clamp(2rem, 11vw, 3.15rem) with a line height of 1.2. At this size the
+     names fit on one line from 320px up. */
+  --names-size: clamp(2.6rem, 14.3vw, 4.1rem);
+  --names-h: calc(var(--names-size) * 0.923 + 1.4125rem);
 
   /* Tray geometry as fractions of the slot box, mirrored from scripts/tray/geometry.mjs (a unit test keeps them in sync). */
   --panel-l: 15.909%; /* geometry.mjs */
@@ -92,7 +112,7 @@
   --clip-t: 5.459%;
   --clip-b: 2.978%;
   /* Strip at rest: width as a fraction of the slot width (unitless, used as calc(var(--slot-w) * x)), bottom edge as a share of the clip box's height. */
-  --strip-rest-w: 0.47727;
+  --strip-rest-w: 0.385;
   --strip-rest-bottom: 3.171%;
   --strip-rest-rot: -2.2deg;
   /* How far the resting strip's bottom edge lies below the top of the clip, as a share of the slot width: (379.3 - 22) / 176. */
@@ -109,7 +129,7 @@
   --shade: 50, 40, 18;
 
   /* Polished metal: soft specular bands. The dark bands sit at the ends so the ink text, which crosses the middle
-     of the plate and the calendar button, stays above 4.5:1 on every band it touches (6.6:1 or more today). */
+     of the plate, stays above 4.5:1 on every band it touches (6.6:1 or more today). */
   --polished-metal: linear-gradient(160deg,
     #eae2cd 0%, #c3b798 11%, #baaf8f 24%, #cabe9f 42%, var(--metal-hi) 55%,
     #c2b695 66%, #beb292 80%, var(--metal-mid) 93%, var(--metal-lo) 98%, #948458 100%);
@@ -126,17 +146,21 @@ html {
   color-scheme: dark;
   /* The body's gradient ends in --olive-deep at its edges, so overscroll shows the same tone. */
   background: var(--olive-deep);
+  /* No rubber-band scrolling past the page's ends (an in-app browser shows its own white background there). */
+  overscroll-behavior: none;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  overscroll-behavior: none;
   min-height: 100vh;
   min-height: 100svh;
+  min-height: var(--vh, 100svh);
   background-color: var(--olive);
   /* Soft overhead light around the booth. The body is the viewport tall, so the gradient needs no fixed attachment (unreliable on iOS). */
-  background-image: radial-gradient(ellipse 120% 75% at 50% 38%, #4b573c 0%, var(--olive) 52%, var(--olive-deep) 100%);
+  background-image: radial-gradient(ellipse 120% 75% at 50% 38%, var(--olive-glow) 0%, var(--olive) 52%, var(--olive-deep) 100%);
   color: var(--cream);
   font-family: "Josefin Sans", system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
@@ -163,6 +187,7 @@ body {
   max-width: 440px;
   min-height: 100vh;
   min-height: 100svh;
+  min-height: var(--vh, 100svh);
   margin-inline: auto;
   /* A stacking context of its own, so the print button's z-index -1 socket paints above the body's background. */
   isolation: isolate;
@@ -176,7 +201,7 @@ body {
   grid-template-rows: 1fr auto auto auto 1fr;
   justify-items: center;
   align-content: stretch;
-  row-gap: 1.25rem;
+  row-gap: var(--gap);
 }
 
 /* The plate and the names share one cell so they can crossfade; the button and details share another. */
@@ -189,7 +214,7 @@ body {
 
 /* Hidden elements use opacity 0 plus visibility hidden (Playwright counts opacity 0 as visible).
    The details wrapper only owns visibility; its children fade in one by one. */
-.names, .strip, .date, .cal-primary, .cal-secondary, .note {
+.names, .strip, .kicker, .date, .note {
   opacity: 0;
   visibility: hidden;
 }
@@ -200,14 +225,13 @@ body {
   visibility: visible;
 }
 
-/* Stagger order: names, date, primary, secondary, note. */
+/* Stagger order: names, "Save the Date", date, note. */
 .names { --i: 0; }
-.date { --i: 1; }
-.cal-primary { --i: 2; }
-.cal-secondary { --i: 3; }
-.note { --i: 4; }
+.kicker { --i: 1; }
+.date { --i: 2; }
+.note { --i: 3; }
 
-.names, .date, .cal-primary, .cal-secondary, .note {
+.names, .kicker, .date, .note {
   transition:
     opacity var(--reveal-ms) ease,
     transform var(--reveal-ms) ease,
@@ -215,22 +239,18 @@ body {
 }
 
 .booth[data-state="printed"] .names,
+.booth[data-state="printed"] .kicker,
 .booth[data-state="printed"] .date,
-.booth[data-state="printed"] .cal-primary,
-.booth[data-state="printed"] .cal-secondary,
 .booth[data-state="printed"] .note,
 html.no-js .names,
+html.no-js .kicker,
 html.no-js .date,
-html.no-js .cal-primary,
-html.no-js .cal-secondary,
 html.no-js .note {
   opacity: 1;
   visibility: visible;
   transform: none;
   transition-delay: calc(var(--i) * var(--reveal-stagger));
 }
-.booth[data-state="printed"] .cal-secondary,
-html.no-js .cal-secondary { opacity: 0.88; }
 .booth[data-state="printed"] .note,
 html.no-js .note { opacity: 0.75; }
 
@@ -281,9 +301,9 @@ html.no-js .etched {
 .plate {
   position: relative;
   align-self: start;
-  width: min(100%, 15rem);
-  min-height: 6rem;
-  padding: 1.25rem 1.5rem;
+  max-width: 100%;
+  min-height: var(--plate-h);
+  padding: 0.9rem 1.9rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -332,7 +352,7 @@ html.no-js .etched {
   top: 0.08em;
   margin-right: -0.16em;
   font-weight: 600;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   line-height: 1.4;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -345,7 +365,7 @@ html.no-js .etched {
   display: grid;
   place-items: center;
   font-weight: 600;
-  font-size: 3rem;
+  font-size: 2.5rem;
   line-height: 1;
   text-shadow: 0 1px 0 rgba(var(--glint), 0.65), 0 -1px 0 rgba(var(--shade), 0.25);
   pointer-events: none;
@@ -365,18 +385,28 @@ html.no-js .etched {
   max-width: 100%;
   align-self: start;
   text-align: center;
-  font-family: "Pinyon Script", cursive;
+  font-family: "Luxurious Script", cursive;
   font-weight: 400;
-  font-size: clamp(2rem, 11vw, 3.25rem);
-  line-height: 1.2;
+  font-size: var(--names-size);
+  line-height: 0.923;
   text-wrap: balance;
   color: var(--cream);
   text-shadow: 0 2px 8px rgba(20, 26, 12, 0.45);
 }
 
-/* At 340px and below the names wrap onto two lines ("Emilija &" / "Dominykas"). */
-@media (max-width: 340px) {
-  .names { padding-inline: 0.75rem; }
+/* The small line above the names. */
+.lead {
+  display: block;
+  /* The trailing letter-space is pulled back so the line is centred. */
+  margin: 0 -0.3em 0.45rem 0;
+  font-family: "Josefin Sans", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-shadow: none;
+  opacity: 0.85;
 }
 
 /* ---------- Tray (the rendered image is the slot; CSS only adds layers over it) ---------- */
@@ -389,7 +419,7 @@ html.no-js .etched {
   /* Under the image sit the failure fallback layers: the interior's tone inside a 2px metal edge. The image covers both, so the render's own frame shows. */
   background:
     url("assets/tray.webp") center / 100% 100% no-repeat,
-    linear-gradient(#c7bea8, #c7bea8) center / calc(100% - 4px) calc(100% - 4px) no-repeat,
+    linear-gradient(#8f8468, #8f8468) center / calc(100% - 4px) calc(100% - 4px) no-repeat,
     var(--metal-mid);
   /* The frame's shadow on the wall. The light comes from the upper left, as in the render. */
   box-shadow:
@@ -399,22 +429,23 @@ html.no-js .etched {
   cursor: pointer;
 }
 
-/* "Save the Date" is etched into the back panel. */
+/* "Save the Date" is etched into the back panel, one word per line. */
 .etched {
   position: absolute;
   inset: var(--panel-t) var(--panel-r) var(--panel-b) var(--panel-l);
   display: grid;
   place-items: center;
+  align-content: center;
   text-align: center;
-  font-family: "Pinyon Script", cursive;
-  font-size: calc(var(--slot-w) * 0.19);
-  line-height: 1.05;
-  text-wrap: balance;
-  /* Engraved into light metal: dark, with a light lower edge. */
-  color: rgba(66, 54, 26, 0.74);
-  text-shadow: 0 1px 0 rgba(255, 250, 232, 0.5), 0 -0.5px 0 rgba(40, 30, 8, 0.3);
+  font-family: "Luxurious Script", cursive;
+  font-size: calc(var(--slot-w) * 0.335);
+  line-height: 0.98;
+  /* Engraved into dark metal and filled with a light tone: a dark upper edge and a faint light lower one. */
+  color: rgba(250, 244, 226, 0.9);
+  text-shadow: 0 -1px 0 rgba(40, 30, 10, 0.4), 0 1px 1px rgba(255, 250, 235, 0.14);
   pointer-events: none;
 }
+.etched span { display: block; }
 
 /* The strip is clipped to the opening, from the back panel's top edge down to the ledge, so it emerges from under the top wall. */
 .tray-clip {
@@ -428,16 +459,19 @@ html.no-js .etched {
 
 /* The shadow the top wall casts on the paper. The render already has this shadow on the metal, so it is drawn on
    the strip only: the element lives inside the strip (which clips it) and sits where the top of the clip is when the
-   strip is at rest. While the strip feeds, app.js moves it the opposite way, so it stays under the top wall. */
+   strip is at rest. While the strip feeds, app.js moves and turns it the opposite way, so it stays under the top
+   wall. It is wider than the strip, so the paper's top corners stay under it when the strip turns in the air. */
 .tray-shade {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--slot-w) * (var(--strip-drop) - 24 / 176));
-  height: calc(var(--slot-w) * 24 / 176);
+  left: -10%;
+  right: -10%;
+  bottom: calc(var(--slot-w) * (var(--strip-drop) - 100 / 176));
+  height: calc(var(--slot-w) * 100 / 176);
   pointer-events: none;
+  /* Deep right under the wall, then fading over 100 design px, like the render's shadow on the metal (topShade in
+     scripts/render-tray.mjs). */
   background: linear-gradient(to bottom,
-    rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.42) 25%, rgba(0, 0, 0, 0.22) 58%, rgba(0, 0, 0, 0.06) 83%, transparent);
+    rgba(0, 0, 0, 0.64), rgba(0, 0, 0, 0.5) 10%, rgba(0, 0, 0, 0.34) 25%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0.04) 75%, transparent);
 }
 .strip {
   position: absolute;
@@ -446,33 +480,24 @@ html.no-js .etched {
   display: block;
   width: calc(var(--slot-w) * var(--strip-rest-w));
   margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: default;
+  pointer-events: none;
   transform: translateX(-50%) rotate(var(--strip-rest-rot));
   transform-origin: 50% 50%;
   overflow: hidden;
   overflow: clip;
-  /* Softer than on a dark interior, with a little shadow to the sides so the paper lifts off the light metal. */
+  /* A little shadow to the sides as well, so the paper lifts off the metal. */
   box-shadow:
     0 5px 6px -1px rgba(0, 0, 0, 0.5),
     0 14px 16px -6px rgba(0, 0, 0, 0.4),
     3px 0 6px -2px rgba(0, 0, 0, 0.32),
     -2px 0 4px -2px rgba(0, 0, 0, 0.22);
 }
-.strip:enabled { cursor: zoom-in; pointer-events: auto; }
-/* While it is still disabled (feeding), taps fall through to the slot, which ignores them. */
-.strip:disabled { pointer-events: none; }
-
 .strip img {
   display: block;
   width: 100%;
   height: auto;
-  /* `auto`: the image's real ratio wins once it has loaded; 440/1600 only sizes the frame before that or if it fails. */
-  aspect-ratio: auto 440 / 1600;
+  /* `auto`: the image's real ratio wins once it has loaded; 314/1600 only sizes the frame before that or if it fails. */
+  aspect-ratio: auto 314 / 1600;
   background: var(--paper);
 }
 
@@ -481,10 +506,10 @@ html.no-js .etched {
 .print-btn {
   position: relative;
   align-self: end;
-  /* The socket reaches 7px past the button. Aligned by margin box, this keeps its outer edge on the row's bottom. */
-  margin-bottom: 7px;
-  width: 4rem;
-  height: 4rem;
+  /* Bottom-aligned in its row, so the gap to the tray is as large as the row allows. The socket reaches 7px past
+     the button, into the gap below the row. */
+  width: 4.5rem;
+  height: 4.5rem;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -515,7 +540,7 @@ html.no-js .etched {
 .print-btn::after {
   content: "";
   position: absolute;
-  inset: 14px;
+  inset: 16px;
   border-radius: 50%;
   border: 1.5px solid rgba(var(--shade), 0.55);
   box-shadow: 0 1px 0 rgba(var(--glint), 0.55), inset 0 1px 0 rgba(var(--shade), 0.25);
@@ -551,59 +576,25 @@ html.no-js .etched {
   align-items: center;
 }
 
+/* "Save the Date" above the date, in the names' script: the heading stays on screen after the strip covers the
+   engraved one. */
+.kicker {
+  /* The script sits high in its line box: the negative margin pulls the date up under it. */
+  margin: 0.25rem 0 -0.65rem;
+  font-family: "Luxurious Script", cursive;
+  font-weight: 400;
+  font-size: 3rem;
+  line-height: 0.923;
+  text-shadow: 0 2px 8px rgba(20, 26, 12, 0.45);
+}
+
 .date {
-  margin: 0.25rem 0 1rem;
+  margin: 0;
   font-family: "Cormorant Garamond", Georgia, serif;
   font-weight: 500;
-  font-size: 2.25rem;
+  font-size: var(--date-size);
   line-height: 1.1;
   letter-spacing: 0.06em;
-}
-
-.cal-primary,
-.cal-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.75rem;
-  font-family: "Josefin Sans", system-ui, sans-serif;
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.cal-primary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 3px;
-  color: var(--ink);
-  font-weight: 600;
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
-  text-decoration: none;
-  background: var(--metal-stack);
-  text-shadow: 0 1px 0 rgba(var(--glint), 0.65), 0 -1px 0 rgba(var(--shade), 0.25);
-  box-shadow:
-    inset 0 1px 0 rgba(var(--glint), 0.85),
-    inset 0 -1px 0 rgba(var(--shade), 0.45),
-    0 2px 0 var(--metal-deep),
-    0 8px 14px -4px rgba(8, 10, 5, 0.6);
-}
-
-.cal-secondary {
-  margin-top: 0.5rem;
-  padding: 0 0.75rem;
-  color: var(--cream);
-  font-weight: 400;
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 1px;
-}
-
-.cal-primary:focus-visible,
-.cal-secondary:focus-visible {
-  outline: 2px solid var(--cream);
-  outline-offset: 3px;
 }
 
 .note {
@@ -630,62 +621,17 @@ html.no-js .etched {
 /* Only the flash state shows it, and only the WAAPI animation raises its opacity. */
 .booth[data-state="flash"] .flash { visibility: visible; }
 
-/* ---------- Close-up dialog ---------- */
-/* A closed dialog must take no space, also where the UA stylesheet has no <dialog> support. */
-.zoom:not([open]) { display: none; }
-.zoom {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  max-width: none;
-  max-height: none;
-  width: 100vw;
-  height: 100vh;
-  height: 100svh;
-  overflow: hidden;
-  cursor: zoom-out;
-}
-.zoom[open] {
-  display: grid;
-  place-items: center;
-  animation: zoom-in 300ms ease-out;
-}
-.zoom::backdrop { background: rgba(20, 24, 15, 0.85); }
-.zoom img {
-  display: block;
-  max-height: 92svh;
-  max-width: 92vw;
-  width: auto;
-  height: auto;
-  box-shadow: 0 0.75rem 2.5rem rgba(0, 0, 0, 0.45);
-}
-.zoom-close {
-  position: absolute;
-  top: max(0.5rem, env(safe-area-inset-top));
-  right: 0.5rem;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(20, 24, 15, 0.6);
-  color: var(--cream);
-  font: inherit;
-  font-size: 1.75rem;
-  line-height: 1;
-  cursor: pointer;
-}
-@keyframes zoom-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes zoom-in-scale { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: scale(1); } }
-
 /* Short phones: the plate, padding and gaps shrink first so the tray stays large (spec-booth-v2 4.2). */
-@media (max-height: 720px) {
-  :root { --chrome: 19.6rem; }
+/* Up to 752px tall: above that the roomy layout (752px at most) fits without scrolling. */
+@media (max-height: 752px) {
+  /* The plate is one line of text (0.75rem x 1.4) and its padding. */
+  :root { --chrome-base: 9.815rem; --gap: 0.8rem; --plate-h: 2.15rem; }
   .booth {
     padding-top: max(0.875rem, env(safe-area-inset-top));
     padding-bottom: max(0.875rem, env(safe-area-inset-bottom));
-    row-gap: 0.375rem;
   }
-  .plate { min-height: 0; padding-block: 0.625rem; }
+  .plate { min-height: 0; padding-block: 0.55rem; }
+  .plate-count { font-size: 2.1rem; }
   /* The plate is too short for two rows of screws: one head per side, centred. */
   .plate::before { top: 50%; transform: translateY(-50%); }
   .plate::after { display: none; }
@@ -694,33 +640,27 @@ html.no-js .etched {
 
 /* On a viewport too short for the content, the page scrolls and bottom-aligning the button (to centre the idle
    booth) would push it below the fold. There it goes to the top of its row instead; the row heights are
-   unchanged, so the slot does not move. The heights sit just under the content's own minimum height, which
-   depends on how the names wrap: up to 340px wide it is 678-683px, 341-459px wide 639-654px, 460px and wider
-   715-718px. At 460px and wider the non-compact layout (above 720px tall) is 790-818px, so the button also
-   moves for 721-742px, where its bottom-aligned socket would end below the fold. */
-@media (max-width: 340px) and (max-height: 676px),
-       (min-width: 341px) and (max-width: 459px) and (max-height: 638px),
-       (min-width: 460px) and (max-height: 712px),
-       (min-width: 460px) and (min-height: 721px) and (max-height: 742px) {
-  .print-btn { align-self: start; margin-top: 7px; }
-}
-
-/* Where the booth is at its 440px maximum the names wrap onto two lines, which makes the names row taller. */
-@media (min-width: 441px) {
-  :root { --chrome: 29.6rem; }
+   unchanged, so the slot does not move. With the tray at its smallest the content is up to 663px tall (from 460px
+   wide; less on narrower screens, where the names are smaller), and the bottom-aligned socket ends about 40px
+   above that: it would be off screen up to 624px tall. */
+@media (max-height: 624px) {
+  /* The gaps go back to their tightest and the tray gets a little smaller, or the button would not fit under it. */
+  :root { --gap: 0.375rem; --slot-k: 0.93; }
+  /* There is no room for the larger button there: it keeps the smaller size. */
+  .print-btn { align-self: start; margin-top: 7px; width: 4rem; height: 4rem; }
+  .print-btn::after { inset: 14px; }
 }
 
 /* ---------- Motion ---------- */
 
 @media (prefers-reduced-motion: no-preference) {
   .halo { animation: pulse 1.8s ease-out infinite; }
-  .zoom[open] { animation-name: zoom-in-scale; }
 
   .booth[data-state]:not([data-state="idle"]) .print-btn { transform: scale(0.92); }
   .print-btn:active { transform: scale(0.94); }
 
   /* Revealed elements rise 10px as they fade in. */
-  .names, .date, .cal-primary, .cal-secondary, .note { transform: translateY(10px); }
+  .names, .kicker, .date, .note { transform: translateY(10px); }
 }
 
 /* Reduced motion: nothing animates its transform and the halo is a static ring; transitions are opacity-only.

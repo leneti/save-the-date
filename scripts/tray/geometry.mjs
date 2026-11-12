@@ -12,5 +12,5 @@ export const OPENING = {
   top: TRAY.rim,
   bottom: TRAY.H - TRAY.rim,
 };
-export const STRIP_REST = { widthPx: 84, bottomPx: 379.3, rotateDeg: -2.2 };
+export const STRIP_REST = { widthPx: 67.76, bottomPx: 379.3, rotateDeg: -2.2 };
 export const pct = (px, of) => +(px / of * 100).toFixed(3);

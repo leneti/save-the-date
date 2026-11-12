@@ -162,6 +162,10 @@ export function makeTracer(C) {
       const M = wi > 0.5 ? MI : MF;
       let at = MF.at + (MI.at - MF.at) * wi, ab = MF.ab + (MI.ab - MF.ab) * wi;
       let f0r = MF.f0[0] + (MI.f0[0] - MF.f0[0]) * wi, f0g = MF.f0[1] + (MI.f0[1] - MF.f0[1]) * wi, f0b = MF.f0[2] + (MI.f0[2] - MF.f0[2]) * wi;
+      if (MI.back !== undefined) { // the back panel (facing the viewer) can have a darker finish than the walls
+        const k = 1 + (MI.back - 1) * wi * sstep(0.75, 0.97, nz);
+        f0r *= k; f0g *= k; f0b *= k;
+      }
       const pu = x * tx + y * ty + z * tz, pv = x * bx + y * by + z * bz;
       // brushing: micro-tilt across the streaks + slow sheet waviness
       let tiltB = 0, tiltT = 0;
