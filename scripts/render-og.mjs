@@ -14,8 +14,6 @@ export async function renderOg(out = OUT) {
     await page.goto(pathToFileURL(join(root, 'scripts/og.html')).href);
     await page.evaluate(async () => {
       await document.fonts.ready;
-      const img = document.querySelector('img');
-      if (!img.complete) await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
     });
     const png = await page.screenshot({ type: 'png' });
     const jpg = await sharp(png).jpeg({ quality: 85, mozjpeg: true }).toBuffer();

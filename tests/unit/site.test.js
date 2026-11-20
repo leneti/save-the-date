@@ -22,10 +22,10 @@ function walk(dir) {
     e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]);
 }
 
-test('og tags are complete, use SITE_URL and do not give the date away', () => {
+test('og tags are complete, use SITE_URL and show only the names', () => {
   assert.match(html, /<title>Emilija &amp; Dominykas<\/title>/);
   assert.equal(meta('property', 'og:title'), 'Emilija & Dominykas');
-  assert.equal(meta('property', 'og:description'), 'Save the Date');
+  assert.doesNotMatch(html, /og:description|name="description"/);
   assert.equal(meta('property', 'og:type'), 'website');
   assert.equal(meta('property', 'og:locale'), 'lt_LT');
   assert.equal(meta('property', 'og:url'), SITE_URL + '/');
